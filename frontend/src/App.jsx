@@ -15,11 +15,12 @@ import {
   ChevronLeft, 
   ChevronRight,
   Briefcase,
-  Github
+  Github,
+  Flame
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 24; // Increased from 12 to 24 for better student browsing
 
 function App() {
   const [internships, setInternships] = useState([]);
@@ -65,7 +66,7 @@ function App() {
       setTotal(total || 0);
     } catch (err) {
       console.error(err);
-      setError('无法获取实习岗位数据，请检查网络连接或稍后重试。');
+      setError('Unable to fetch internship data. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -143,22 +144,22 @@ function App() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300 flex flex-col font-sans">
       {/* Header */}
       <header className="sticky top-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/85 border-b border-slate-200/80 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="bg-blue-600 p-2 rounded-xl shadow-xs">
               <LayoutGrid className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1">
+              <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1">
                 Internship<span className="text-blue-600 dark:text-blue-400">Aggregator</span>
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              Summer 2026 Ready
+            <div className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-xs">
+              <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
+              Summer 2026 Season
             </div>
 
             <a
@@ -176,37 +177,37 @@ function App() {
               className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               aria-label="Toggle Dark Mode"
             >
-              {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
+              {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {/* Hero Title */}
-        <div className="text-center mb-6 pt-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200/80 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-semibold mb-3">
-            <Briefcase className="w-3.5 h-3.5" />
-            留学生与应届生求职首选 • 每日全网实时爬取
+      {/* Main Container: Strictly aligned to unified max-w-5xl */}
+      <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 w-full">
+        {/* Hero Title & Value Proposition */}
+        <div className="text-center mb-7 pt-2">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200/90 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-bold mb-3 shadow-xs">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            Zero Ghosting • Direct Company Applications • Real Hourly Pay
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
-            Find Your Dream Internship
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight mb-3">
+            Lock In Your Dream Internship
           </h2>
-          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            一站式聚合全美科技大厂、量化金融、AI 独角兽与航空国防实习机会，透明展示薪资与 Visa 友好指数
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            Real-time aggregator tracking verified Tech, Quant, and AI roles. Transparent compensation and F-1 / CPT / OPT sponsorship odds.
           </p>
         </div>
 
-        {/* 1. Live Stats & Update Time Banner */}
+        {/* 1. Live Stats Banner with Animated Numbers */}
         <LiveStatsBanner stats={stats} loading={!stats} />
 
-        {/* 2. Company Logos Row (High-contrast pure white tile in both light and dark mode) */}
+        {/* 2. Top Recruiting Companies Row (Crisp white tiles for high contrast in dark mode) */}
         <div className="mb-6">
-          <div className="text-center text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
-            Top Recruiting Companies • 点击直接筛选
+          <div className="text-center text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
+            Top Recruiting Channels • Click to filter
           </div>
-          <div className="flex items-center justify-start sm:justify-center gap-3 sm:gap-5 overflow-x-auto no-scrollbar py-2 px-2">
+          <div className="flex items-center justify-start sm:justify-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2 px-1">
             {sources.map((source) => {
               const isSelected = selectedSource === source.id;
               return (
@@ -214,10 +215,10 @@ function App() {
                   key={source.id}
                   onClick={() => handleSourceSelect(source.id)}
                   className={`flex flex-col items-center gap-1.5 group transition-all duration-200 cursor-pointer shrink-0 ${
-                    isSelected ? 'scale-105 opacity-100' : 'opacity-70 hover:opacity-100'
+                    isSelected ? 'scale-105 opacity-100' : 'opacity-75 hover:opacity-100'
                   }`}
                 >
-                  {/* Clean pure white tile for crisp logo contrast in both themes */}
+                  {/* Clean pure white tile for sharp logo contrast in both themes */}
                   <div
                     className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 flex items-center justify-center p-2.5 shadow-xs transition-all ${
                       isSelected
@@ -239,7 +240,7 @@ function App() {
                     />
                   </div>
                   <span
-                    className={`text-xs font-medium whitespace-nowrap transition-colors ${
+                    className={`text-xs font-semibold whitespace-nowrap transition-colors ${
                       isSelected ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-600 dark:text-slate-400'
                     }`}
                   >
@@ -251,7 +252,7 @@ function App() {
           </div>
         </div>
 
-        {/* 3. Search Bar with single-row scrollable hot keywords */}
+        {/* 3. Search Bar with fully displayed hot keywords */}
         <SearchBar onSearch={handleSearch} value={searchQuery} />
 
         {/* 4. Quick Filter Navigation Bar */}
@@ -267,64 +268,63 @@ function App() {
             <div className="bg-rose-50 dark:bg-rose-950/40 p-3 rounded-full mb-4 border border-rose-200 dark:border-rose-900">
               <AlertCircle className="w-8 h-8 text-rose-500" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">网络或数据加载异常</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Unable to Load Postings</h3>
             <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-md text-sm">{error}</p>
             <button
               onClick={() => fetchInternships(searchQuery, page, selectedSource, filters)}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors cursor-pointer shadow-sm"
             >
-              重新加载
+              Retry
             </button>
           </div>
         ) : (
           <>
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-pulse">
                 {[...Array(6)].map((_, i) => (
                   <div
                     key={i}
-                    className="bg-white dark:bg-slate-800 rounded-xl h-64 border border-slate-200 dark:border-slate-700"
+                    className="bg-white dark:bg-slate-800 rounded-2xl h-56 border border-slate-200 dark:border-slate-700"
                   ></div>
                 ))}
               </div>
             ) : internships.length === 0 ? (
-              <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8">
+              <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-8 shadow-xs">
                 <Briefcase className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">未找到符合条件的实习岗位</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Matching Roles Found</h3>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 mb-4">
-                  请尝试调整或重置筛选条件、清除搜索关键词
+                  Try adjusting your keywords, expanding your location, or clearing filters.
                 </p>
                 <button
                   onClick={handleResetFilters}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors cursor-pointer shadow-xs"
                 >
-                  清空所有筛选
+                  Reset All Filters
                 </button>
               </div>
             ) : (
               <>
-                <div className="mb-4 flex items-center justify-between text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                <div className="mb-4 flex items-center justify-between text-xs sm:text-sm text-slate-500 dark:text-slate-400 px-1">
                   <div>
-                    正在显示第{' '}
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    Showing{' '}
+                    <span className="font-bold text-slate-900 dark:text-white">
                       {(page - 1) * ITEMS_PER_PAGE + 1}
                     </span>{' '}
                     -{' '}
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="font-bold text-slate-900 dark:text-white">
                       {Math.min(page * ITEMS_PER_PAGE, total)}
                     </span>{' '}
-                    条，共{' '}
-                    <span className="font-bold text-blue-600 dark:text-blue-400">{total}</span> 条有效岗位
+                    of <span className="font-extrabold text-blue-600 dark:text-blue-400">{total}</span> verified openings
                   </div>
                   {totalPages > 1 && (
-                    <div className="hidden sm:block">
-                      页码: {page} / {totalPages}
+                    <div className="hidden sm:block font-medium">
+                      Page {page} of {totalPages}
                     </div>
                   )}
                 </div>
 
                 {/* Job Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {internships.map((internship) => (
                     <InternshipCard key={internship.id} internship={internship} />
                   ))}
@@ -341,8 +341,8 @@ function App() {
                     <ChevronLeft className="w-5 h-5" />
                   </button>
 
-                  <span className="px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xs">
-                    {page} / {totalPages}
+                  <span className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xs">
+                    Page {page} of {totalPages}
                   </span>
 
                   <button
@@ -365,16 +365,16 @@ function App() {
 
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 py-8 text-center text-xs text-slate-500 dark:text-slate-400">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
+            <span className="font-bold text-slate-900 dark:text-white">
               Internship Aggregator
             </span>
-            <span>• 专为全美留学生与应届生打造的实习聚合平台</span>
+            <span>• Built by students, for students. Zero fluff, real compensation.</span>
           </div>
           <div>
-            <span>Data synced daily • Powered by FastAPI & React</span>
+            <span>Scraped daily across Tech, Quant & AI • Powered by FastAPI & React</span>
           </div>
         </div>
       </footer>

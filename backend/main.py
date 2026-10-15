@@ -90,7 +90,7 @@ def subscribe(body: SubscribeRequest, session: Session = Depends(get_session)):
     
     return {
         "status": "success",
-        "message": f"订阅成功！已向 {email} 发送最新 20 条全美精选实习速递。",
+        "message": f"Subscribed! We've sent the top 20 verified internships to {email}.",
         "email": email,
         "email_sent": sent,
         "count": len(latest_20)
@@ -108,7 +108,7 @@ def get_sources():
 @router.get("/internships", response_model=Dict[str, Any])
 def read_internships(
     offset: int = 0,
-    limit: int = 12,
+    limit: int = 24,
     search: Optional[str] = None,
     sort_by_date: bool = True,
     source: Optional[str] = None,
