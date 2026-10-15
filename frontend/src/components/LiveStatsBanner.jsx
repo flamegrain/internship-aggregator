@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Clock, Globe, Briefcase, Zap, Building2, Flame, TrendingUp } from 'lucide-react';
+import { Sparkles, Clock, Globe, Briefcase, Zap, Building2, Flame } from 'lucide-react';
 
-// Smooth animated counter hook
-function useAnimatedCounter(endValue, duration = 1200) {
+// Continuous looping animated counter with a 1-second pause at the end of each cycle
+function useAnimatedLoopingCounter(endValue, duration = 1400, pauseMs = 1000) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -12,25 +12,29 @@ function useAnimatedCounter(endValue, duration = 1200) {
 
     let startTime = null;
     let animationFrameId;
+    const totalCycle = duration + pauseMs;
 
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // easeOutExpo
-      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setCount(Math.floor(easeProgress * target));
+      const elapsedInCycle = elapsed % totalCycle;
 
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(animate);
+      if (elapsedInCycle < duration) {
+        const progress = elapsedInCycle / duration;
+        // Smooth easeOutCubic curve from 0 to 1
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        setCount(Math.round(easeProgress * target));
       } else {
+        // Hold firmly at target number for pauseMs (1 second)
         setCount(target);
       }
+
+      animationFrameId = requestAnimationFrame(animate);
     };
 
     animationFrameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [endValue, duration]);
+  }, [endValue, duration, pauseMs]);
 
   return count;
 }
@@ -58,11 +62,11 @@ const LiveStatsBanner = ({ stats, loading }) => {
   const rawCompanies = stats?.companies_count ?? 622;
   const updateTime = stats?.latest_update ? formatTime(stats.latest_update) : 'Just now';
 
-  // Animated counters
-  const animatedTotal = useAnimatedCounter(rawTotal, 1400);
-  const animatedVisa = useAnimatedCounter(rawVisa, 1200);
-  const animatedAi = useAnimatedCounter(rawAi, 1200);
-  const animatedCompanies = useAnimatedCounter(rawCompanies, 1000);
+  // Synchronized continuous looping animated counters with 1s pause
+  const animatedTotal = useAnimatedLoopingCounter(rawTotal, 1400, 1000);
+  const animatedVisa = useAnimatedLoopingCounter(rawVisa, 1400, 1000);
+  const animatedAi = useAnimatedLoopingCounter(rawAi, 1400, 1000);
+  const animatedCompanies = useAnimatedLoopingCounter(rawCompanies, 1400, 1000);
 
   return (
     <div className="w-full max-w-5xl mx-auto mb-8">
@@ -89,7 +93,7 @@ const LiveStatsBanner = ({ stats, loading }) => {
                 </span>
               </div>
               <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-baseline gap-2">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 text-3xl sm:text-4xl font-extrabold tabular-nums">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 text-3xl sm:text-4xl font-extrabold tabular-nums transition-all">
                   {animatedTotal.toLocaleString()}
                 </span>
                 <span className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">
@@ -102,7 +106,7 @@ const LiveStatsBanner = ({ stats, loading }) => {
             </div>
           </div>
 
-          {/* Right: Key student metrics with number animations */}
+          {/* Right: Key student metrics with continuous looping number animations */}
           <div className="grid grid-cols-3 gap-2.5 sm:gap-3 w-full lg:w-auto">
             {/* Visa F-1 */}
             <div className="flex flex-col items-center sm:items-start bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-3 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
