@@ -62,7 +62,7 @@ def process_github_readme(source_config, session):
         content = response.text
     except Exception as e:
         logging.error(f"Error fetching GitHub data: {e}")
-        return
+        return 0
 
     # Use BeautifulSoup to parse HTML content within the markdown
     soup = BeautifulSoup(content, 'html.parser')
@@ -71,11 +71,12 @@ def process_github_readme(source_config, session):
     table = soup.find('table')
     if not table:
         logging.warning("No table found in content.")
-        return
+        return 0
 
     rows = table.find_all('tr')
     count = 0
     errors = 0
+    last_company_name = ""
     
     for row in rows:
         cols = row.find_all('td')
@@ -93,6 +94,10 @@ def process_github_readme(source_config, session):
             company_text = company_col.get_text(strip=True)
             # Remove emojis if any (heuristic)
             company_name = re.sub(r'[^\w\s&.-]', '', company_text).strip()
+            if not company_name and last_company_name:
+                company_name = last_company_name
+            elif company_name:
+                last_company_name = company_name
             
             # Extract Role
             role = role_col.get_text(strip=True)
@@ -170,6 +175,7 @@ def process_github_readme(source_config, session):
             continue
             
     logging.info(f"Scraped and saved {count} new internships from GitHub. Errors encountered: {errors}")
+    return count
 
 def process_simulated_source(source_config, session):
     """
@@ -374,15 +380,8 @@ def run_crawler():
             
             try:
                 if source_type == "github_readme":
-                    # Assume github always runs "successfully" if no critical error, 
-                    # but we might want to track actual items in process_github_readme return value.
-                    # For now, we wrap it to catch exceptions but it manages its own logging.
-                    # Refactoring process_github_readme to return count would be better, 
-                    # but adhering to minimal changes, we'll assume success if no exception.
-                    process_github_readme(source, session) 
-                    success = True 
-                    # Note: process_github_readme doesn't return count yet, so we can't log it accurately in status without modifying it.
-                    # We will update status date at least.
+                    items_saved = process_github_readme(source, session) or 0
+                    success = True
 
                 elif source_type == "simulated_company_listing":
                     process_simulated_source(source, session)
