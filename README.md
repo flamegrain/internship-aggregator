@@ -10,7 +10,7 @@
 
 A powerful full-stack internship aggregation platform designed to help students find, filter, and track their dream internships. Aggregates **1,500+ internships** from **10 top companies** and community sources. Specifically optimized for Summer 2026 internship cycles.
 
-![Dashboard Preview](assets/homepage_preview.png)
+![Dashboard Preview](assets/homepage_preview_v2.png)
 
 ---
 
