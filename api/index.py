@@ -1,18 +1,15 @@
-from fastapi import FastAPI
-from mangum import Mangum
 import sys
 import os
 
-app = FastAPI()
+# Ensure project root is in sys.path
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
 
-@app.get("/api/health")
-def health_check():
-    return {
-        "status": "ok", 
-        "message": "Backend is running on Vercel (Minimal App)",
-        "sys_path": sys.path,
-        "cwd": os.getcwd(),
-        "files": os.listdir(".")
-    }
+from backend.main import app
 
-handler = Mangum(app, lifespan="off")
+try:
+    from mangum import Mangum
+    handler = Mangum(app, lifespan="off")
+except ImportError:
+    handler = app

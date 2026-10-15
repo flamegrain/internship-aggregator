@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends, Query, APIRouter
 from sqlmodel import Session, select, func
 from typing import List, Optional, Dict, Any
 import json
@@ -23,6 +23,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+router = APIRouter()
+
 def load_data_sources():
     try:
         json_path = os.path.join(os.path.dirname(__file__), 'data_sources.json')
@@ -32,11 +34,15 @@ def load_data_sources():
         print(f"Error loading data sources: {e}")
         return []
 
-@app.get("/sources", response_model=List[Dict[str, Any]])
+@router.get("/health")
+def health_check():
+    return {"status": "ok", "message": "Internship Aggregator API is running"}
+
+@router.get("/sources", response_model=List[Dict[str, Any]])
 def get_sources():
     return load_data_sources()
 
-@app.get("/internships", response_model=Dict[str, Any])
+@router.get("/internships", response_model=Dict[str, Any])
 def read_internships(
     offset: int = 0,
     limit: int = 12,
@@ -70,3 +76,6 @@ def read_internships(
         "items": internships,
         "total": total
     }
+
+app.include_router(router)
+app.include_router(router, prefix="/api")

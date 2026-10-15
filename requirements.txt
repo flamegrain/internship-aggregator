@@ -3,5 +3,4 @@ uvicorn
 sqlmodel
 requests
 beautifulsoup4
-playwright
 mangum
