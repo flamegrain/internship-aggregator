@@ -4,10 +4,11 @@
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind--CSS-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel&logoColor=white)](https://internship-aggregator-nu.vercel.app/)
 
-[English] | [简体中文](./README.zh-CN.md)
+[English] | [简体中文](./README.zh-CN.md) | 🌐 **Live Demo**: [internship-aggregator-nu.vercel.app](https://internship-aggregator-nu.vercel.app/)
 
-A powerful full-stack internship aggregation platform designed to help students find, filter, and track their dream internships. Aggregates **600+ internships** from **10 top companies** and community sources. Specifically optimized for Summer 2026 internship cycles.
+A powerful full-stack internship aggregation platform designed to help students find, filter, and track their dream internships. Aggregates **1,500+ internships** from **10 top companies** and community sources. Specifically optimized for Summer 2026 internship cycles.
 
 ![Dashboard Preview](assets/homepage_preview.png)
 
@@ -96,8 +97,8 @@ Our data collection engine is built for scale and flexibility:
 
 ### 1. Backend Setup
 ```bash
-# Clone the repositoryx`
-git clone https://github.com/Mikelee2022/internship-aggregator
+# Clone the repository
+git clone https://github.com/flamegrain/internship-aggregator.git
 cd internship-aggregator
 
 # Create and activate virtual environment

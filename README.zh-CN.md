@@ -4,10 +4,11 @@
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind--CSS-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel&logoColor=white)](https://internship-aggregator-nu.vercel.app/)
 
-[English](./README.md) | [简体中文]
+[English](./README.md) | [简体中文] | 🌐 **在线演示**: [internship-aggregator-nu.vercel.app](https://internship-aggregator-nu.vercel.app/)
 
-一个功能强大的全栈实习信息聚合平台，旨在帮助学生发现、筛选并追踪心仪的实习机会。聚合了来自**10家顶级公司**和社区源的**600+实习职位**。特别针对 2026 年夏季实习周期进行了优化。
+一个功能强大的全栈实习信息聚合平台，旨在帮助学生发现、筛选并追踪心仪的实习机会。聚合了来自**10家顶级公司**和社区源的**1,500+实习职位**。特别针对 2026 年夏季实习周期进行了优化。
 
 ---
 
@@ -67,7 +68,7 @@ Internship Aggregator 的核心竞争力在于其**无与伦比的数据丰富�
 ### 1. 后端设置
 ```bash
 # 克隆仓库
-git clone https://github.com/Mikelee2022/internship-aggregator
+git clone https://github.com/flamegrain/internship-aggregator.git
 cd internship-aggregator
 
 # 创建并激活虚拟环境
