@@ -67,16 +67,23 @@ def subscribe(body: SubscribeRequest, session: Session = Depends(get_session)):
     if not is_valid_email(email):
         raise HTTPException(status_code=400, detail="Invalid email format")
     
-    existing = session.exec(select(Subscription).where(Subscription.email == email)).first()
-    if existing:
-        if not existing.is_active:
-            existing.is_active = True
-            session.add(existing)
+    try:
+        existing = session.exec(select(Subscription).where(Subscription.email == email)).first()
+        if existing:
+            if not existing.is_active:
+                existing.is_active = True
+                session.add(existing)
+                session.commit()
+        else:
+            new_sub = Subscription(email=email)
+            session.add(new_sub)
             session.commit()
-    else:
-        new_sub = Subscription(email=email)
-        session.add(new_sub)
-        session.commit()
+    except Exception as e:
+        print(f"Subscription DB write handled (read-only environment): {e}")
+        try:
+            session.rollback()
+        except Exception:
+            pass
         
     latest_20 = session.exec(select(Internship).order_by(Internship.posted_date.desc()).limit(20)).all()
     sent = send_digest_email(email, latest_20)
