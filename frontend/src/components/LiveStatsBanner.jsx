@@ -3,9 +3,17 @@ import { Sparkles, Clock, Globe, Briefcase, Zap, Building2, Flame } from 'lucide
 
 // Continuous looping animated counter with a 1-second pause at the end of each cycle
 function useAnimatedLoopingCounter(endValue, duration = 1400, pauseMs = 1000) {
-  const [count, setCount] = useState(0);
+  const isStatic = typeof window !== 'undefined' && (
+    window.location.search.includes('static') ||
+    window.location.search.includes('screenshot')
+  );
+  const [count, setCount] = useState(() => isStatic ? (endValue ?? 0) : 0);
 
   useEffect(() => {
+    if (isStatic) {
+      setCount(endValue ?? 0);
+      return;
+    }
     if (!endValue && endValue !== 0) return;
     const target = Number(endValue);
     if (isNaN(target)) return;
