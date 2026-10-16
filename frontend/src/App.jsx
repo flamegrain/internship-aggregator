@@ -40,6 +40,7 @@ function App() {
     ai_only: false,
     company_type: '',
     high_salary: false,
+    source_type: '',
   });
 
   // Fetch internships with all search and quick filters
@@ -53,6 +54,7 @@ function App() {
       };
       if (query) params.search = query;
       if (sourceId) params.source = sourceId;
+      if (currentFilters.source_type) params.source_type = currentFilters.source_type;
       if (currentFilters.location) params.location = currentFilters.location;
       if (currentFilters.min_score) params.min_score = currentFilters.min_score;
       if (currentFilters.ai_only) params.ai_only = true;
@@ -125,6 +127,7 @@ function App() {
       ai_only: false,
       company_type: '',
       high_salary: false,
+      source_type: '',
     });
     setSelectedSource(null);
     setSearchQuery('');

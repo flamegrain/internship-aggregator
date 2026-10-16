@@ -1,33 +1,66 @@
 {
   "SimplifyJobs GitHub Repository": {
-    "date": "2026-10-15",
+    "source_id": "simplify_jobs_github",
+    "source_name": "SimplifyJobs GitHub Repository",
+    "source_type": "community_verified",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:44:36.482100",
+    "items_fetched": 1918,
+    "items_saved": 1205,
+    "items_merged": 713,
+    "items_closed": 0,
     "status": "success",
-    "items_saved": 638,
-    "timestamp": "2026-10-15T06:14:04.133024"
+    "alert": null
   },
   "NASA STEM Gateway": {
+    "source_id": "nasa_official",
+    "source_name": "NASA STEM Gateway",
+    "source_type": "official_portal",
     "date": "2026-03-02",
-    "status": "success",
+    "timestamp": "2026-03-02T12:17:01.588771",
+    "items_fetched": 0,
     "items_saved": 0,
-    "timestamp": "2026-03-02T12:17:01.588771"
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "warning",
+    "alert": "NASA STEM Gateway returned 0 listings during last browser crawl (possible anti-bot wall or closed recruiting window)."
   },
   "Meta Careers": {
     "date": "2026-03-02",
     "status": "success",
     "items_saved": 15,
-    "timestamp": "2026-03-02T12:17:38.748557"
+    "timestamp": "2026-03-02T12:17:38.748557",
+    "source_id": "meta_official",
+    "source_name": "Meta Careers",
+    "source_type": "official_portal",
+    "items_fetched": 15,
+    "items_merged": 0,
+    "items_closed": 0
   },
   "Apple Jobs": {
     "date": "2026-03-02",
     "status": "success",
     "items_saved": 12,
-    "timestamp": "2026-03-02T12:18:11.666147"
+    "timestamp": "2026-03-02T12:18:11.666147",
+    "source_id": "apple_official",
+    "source_name": "Apple Jobs",
+    "source_type": "official_portal",
+    "items_fetched": 12,
+    "items_merged": 0,
+    "items_closed": 0
   },
   "Goldman Sachs Programs": {
+    "source_id": "goldman_sachs_official",
+    "source_name": "Goldman Sachs Programs",
+    "source_type": "official_portal",
     "date": "2026-03-02",
-    "status": "success",
+    "timestamp": "2026-03-02T12:18:30.470449",
+    "items_fetched": 0,
     "items_saved": 0,
-    "timestamp": "2026-03-02T12:18:30.470449"
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "warning",
+    "alert": "Goldman Sachs Programs returned 0 listings during last browser crawl (possible anti-bot wall or closed recruiting window)."
   },
   "Microsoft Careers": {
     "date": "2026-03-02",
@@ -36,10 +69,17 @@
     "timestamp": "2026-03-02T12:18:32.606222"
   },
   "JPMorgan Chase Careers": {
+    "source_id": "jpmorgan_chase_official",
+    "source_name": "JPMorgan Chase Careers",
+    "source_type": "official_portal",
     "date": "2026-03-02",
-    "status": "success",
+    "timestamp": "2026-03-02T12:18:48.207960",
+    "items_fetched": 0,
     "items_saved": 0,
-    "timestamp": "2026-03-02T12:18:48.207960"
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "warning",
+    "alert": "JPMorgan Chase Careers returned 0 listings during last browser crawl (possible anti-bot wall or closed recruiting window)."
   },
   "Morgan Stanley Careers": {
     "date": "2026-03-02",
@@ -51,12 +91,180 @@
     "date": "2026-03-02",
     "status": "success",
     "items_saved": 2,
-    "timestamp": "2026-03-02T12:19:05.171600"
+    "timestamp": "2026-03-02T12:19:05.171600",
+    "source_id": "google_official",
+    "source_name": "Google Careers",
+    "source_type": "official_portal",
+    "items_fetched": 2,
+    "items_merged": 0,
+    "items_closed": 0
   },
   "Amazon Jobs": {
     "date": "2026-03-02",
     "status": "success",
     "items_saved": 4,
-    "timestamp": "2026-03-02T12:19:22.632619"
+    "timestamp": "2026-03-02T12:19:22.632619",
+    "source_id": "amazon_official",
+    "source_name": "Amazon Jobs",
+    "source_type": "official_portal",
+    "items_fetched": 4,
+    "items_merged": 0,
+    "items_closed": 0
+  },
+  "Microsoft Careers API": {
+    "source_id": "microsoft_official",
+    "source_name": "Microsoft Careers API",
+    "source_type": "official_api",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:43:45.517111",
+    "items_fetched": 10,
+    "items_saved": 10,
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Morgan Stanley Careers API": {
+    "source_id": "morgan_stanley_official",
+    "source_name": "Morgan Stanley Careers API",
+    "source_type": "official_api",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:43:48.632791",
+    "items_fetched": 11,
+    "items_saved": 11,
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Stripe (Greenhouse ATS)": {
+    "source_id": "stripe_greenhouse_ats",
+    "source_name": "Stripe (Greenhouse ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:43:52.216884",
+    "items_fetched": 7,
+    "items_saved": 6,
+    "items_merged": 1,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Databricks (Greenhouse ATS)": {
+    "source_id": "databricks_greenhouse_ats",
+    "source_name": "Databricks (Greenhouse ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:43:55.563855",
+    "items_fetched": 8,
+    "items_saved": 8,
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Cloudflare (Greenhouse ATS)": {
+    "source_id": "cloudflare_greenhouse_ats",
+    "source_name": "Cloudflare (Greenhouse ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:43:58.397381",
+    "items_fetched": 3,
+    "items_saved": 2,
+    "items_merged": 1,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "SpaceX (Greenhouse ATS)": {
+    "source_id": "spacex_greenhouse_ats",
+    "source_name": "SpaceX (Greenhouse ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:44:04.428066",
+    "items_fetched": 14,
+    "items_saved": 14,
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Pinterest (Greenhouse ATS)": {
+    "source_id": "pinterest_greenhouse_ats",
+    "source_name": "Pinterest (Greenhouse ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:44:08.284518",
+    "items_fetched": 16,
+    "items_saved": 15,
+    "items_merged": 1,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Robinhood (Greenhouse ATS)": {
+    "source_id": "robinhood_greenhouse_ats",
+    "source_name": "Robinhood (Greenhouse ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:44:10.473627",
+    "items_fetched": 2,
+    "items_saved": 2,
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Scale AI (Greenhouse ATS)": {
+    "source_id": "scaleai_greenhouse_ats",
+    "source_name": "Scale AI (Greenhouse ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:44:13.573071",
+    "items_fetched": 2,
+    "items_saved": 1,
+    "items_merged": 1,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Figma (Greenhouse ATS)": {
+    "source_id": "figma_greenhouse_ats",
+    "source_name": "Figma (Greenhouse ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:44:15.360041",
+    "items_fetched": 7,
+    "items_saved": 7,
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Duolingo (Greenhouse ATS)": {
+    "source_id": "duolingo_greenhouse_ats",
+    "source_name": "Duolingo (Greenhouse ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:44:18.268038",
+    "items_fetched": 4,
+    "items_saved": 4,
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
+  },
+  "Palantir (Lever ATS)": {
+    "source_id": "palantir_lever_ats",
+    "source_name": "Palantir (Lever ATS)",
+    "source_type": "public_ats",
+    "date": "2026-10-16",
+    "timestamp": "2026-10-16T04:44:33.820833",
+    "items_fetched": 48,
+    "items_saved": 48,
+    "items_merged": 0,
+    "items_closed": 0,
+    "status": "success",
+    "alert": null
   }
 }

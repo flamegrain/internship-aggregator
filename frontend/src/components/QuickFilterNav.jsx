@@ -5,7 +5,6 @@ import {
   Globe, 
   Building2, 
   RotateCcw, 
-  Sparkles,
   SlidersHorizontal
 } from 'lucide-react';
 
@@ -26,25 +25,26 @@ const VISA_OPTIONS = [
 ];
 
 const SALARY_OPTIONS = [
-  { label: 'Any Hourly Pay', value: '' },
-  { label: '💰 $45+/hr (~$7,200/mo)', value: true },
+  { label: 'Any Disclosed Pay', value: '' },
+  { label: '💰 Verified Disclosed Pay ($40+/hr)', value: true },
 ];
 
 const COMPANY_TYPES = [
   { label: 'All Sectors', value: '' },
-  { label: '🏢 Big Tech (FAANG & Mag 7)', value: 'big_tech' },
+  { label: '🏢 Big Tech (FAANG & Unicorns)', value: 'big_tech' },
   { label: '📈 Quant & Wall St Finance', value: 'quant_finance' },
   { label: '🤖 GenAI & LLM Unicorns', value: 'ai_ml' },
   { label: '🚀 Aerospace & Defense', value: 'defense_aerospace' },
 ];
 
 const PRESETS = [
-  { id: 'visa8', label: '🌟 Top F-1 Sponsor', apply: { min_score: 8, location: '', company_type: '', high_salary: false, ai_only: false } },
-  { id: 'ai', label: '🤖 GenAI & LLM Hub', apply: { ai_only: true, company_type: 'ai_ml', min_score: null, location: '', high_salary: false } },
-  { id: 'salary', label: '💰 Bag Secured ($45+/hr)', apply: { high_salary: true, min_score: null, location: '', company_type: '', ai_only: false } },
-  { id: 'remote', label: '🏠 Fully Remote (WFH)', apply: { location: 'Remote', min_score: null, company_type: '', high_salary: false, ai_only: false } },
-  { id: 'nyc', label: '🗽 NYC Finance & Tech', apply: { location: 'New York', min_score: null, company_type: '', high_salary: false, ai_only: false } },
-  { id: 'bigtech', label: '🏢 Silicon Valley Big Tech', apply: { company_type: 'big_tech', min_score: null, location: '', high_salary: false, ai_only: false } },
+  { id: 'official', label: '🛡️ Official API & ATS', apply: { source_type: 'official_verified', min_score: null, location: '', company_type: '', high_salary: false, ai_only: false } },
+  { id: 'visa8', label: '🌟 Top F-1 Sponsor', apply: { min_score: 8, source_type: '', location: '', company_type: '', high_salary: false, ai_only: false } },
+  { id: 'ai', label: '🤖 GenAI & LLM Hub', apply: { ai_only: true, company_type: 'ai_ml', source_type: '', min_score: null, location: '', high_salary: false } },
+  { id: 'salary', label: '💰 Verified Pay Disclosed', apply: { high_salary: true, source_type: '', min_score: null, location: '', company_type: '', ai_only: false } },
+  { id: 'remote', label: '🏠 Fully Remote (WFH)', apply: { location: 'Remote', source_type: '', min_score: null, company_type: '', high_salary: false, ai_only: false } },
+  { id: 'nyc', label: '🗽 NYC Finance & Tech', apply: { location: 'New York', source_type: '', min_score: null, company_type: '', high_salary: false, ai_only: false } },
+  { id: 'bigtech', label: '🏢 Silicon Valley Big Tech', apply: { company_type: 'big_tech', source_type: '', min_score: null, location: '', high_salary: false, ai_only: false } },
 ];
 
 const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
@@ -89,6 +89,7 @@ const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
             </span>
             {PRESETS.map((p) => {
               const isMatch = 
+                (p.id === 'official' && filters.source_type === 'official_verified') ||
                 (p.id === 'visa8' && filters.min_score === 8) ||
                 (p.id === 'ai' && (filters.ai_only || filters.company_type === 'ai_ml')) ||
                 (p.id === 'salary' && filters.high_salary) ||
@@ -163,7 +164,7 @@ const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1">
               <DollarSign className="w-3.5 h-3.5 text-amber-500" />
-              Hourly Pay Floor
+              Disclosed Compensation
             </label>
             <select
               value={filters.high_salary ? 'true' : ''}

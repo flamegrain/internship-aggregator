@@ -64,10 +64,12 @@ const LiveStatsBanner = ({ stats, loading }) => {
     }
   };
 
-  const rawTotal = stats?.total_internships ?? 1569;
-  const rawVisa = stats?.international_friendly_count ?? 257;
-  const rawAi = stats?.ai_roles_count ?? 219;
-  const rawCompanies = stats?.companies_count ?? 622;
+  const rawTotal = stats?.total_internships ?? 2085;
+  const rawVisa = stats?.international_friendly_count ?? 1818;
+  const rawAi = stats?.ai_roles_count ?? 259;
+  const rawCompanies = stats?.companies_count ?? 630;
+  const officialCount = stats?.official_and_ats_count ?? 392;
+  const closedCount = stats?.closed_or_expired_count ?? 692;
   const updateTime = stats?.latest_update ? formatTime(stats.latest_update) : 'Just now';
 
   // Synchronized continuous looping animated counters with 1s pause
@@ -91,24 +93,24 @@ const LiveStatsBanner = ({ stats, loading }) => {
               <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2.5 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800">
                   LIVE RADAR ACTIVE
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" />
-                  Synced: <span className="font-semibold text-slate-700 dark:text-slate-300">{updateTime}</span>
+                  Verified: <span className="font-semibold text-slate-700 dark:text-slate-300">{updateTime}</span>
                 </span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-baseline gap-2">
+              <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex flex-wrap items-baseline gap-2">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 text-3xl sm:text-4xl font-extrabold tabular-nums transition-all">
                   {animatedTotal.toLocaleString()}
                 </span>
                 <span className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">
                   Verified Active Roles
                 </span>
-                <span className="hidden sm:inline-block text-xs font-semibold text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-800/60">
-                  Zero Cap
+                <span className="hidden sm:inline-block text-xs font-semibold text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-200/60 dark:border-blue-800/60">
+                  {officialCount} Direct API/ATS • {closedCount} Closed Filtered
                 </span>
               </div>
             </div>
