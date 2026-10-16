@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Ensure venv pure-python packages (requests, bs4) and backend modules are importable
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 VENV_SITE = os.path.join(ROOT_DIR, "venv", "lib", "python3.11", "site-packages")
@@ -47,6 +46,122 @@ def infer_industry(company_name: str, role_title: str) -> str:
     return "Technology"
 
 
+def ensure_schema(cur):
+    cols = {r[1] for r in cur.execute("PRAGMA table_info(internship)").fetchall()}
+    new_cols = [
+        ("job_type", "TEXT DEFAULT 'internship'"),
+        ("role_category", "TEXT DEFAULT 'unclassified'"),
+        ("category_evidence", "TEXT"),
+        ("salary_min", "REAL"),
+        ("salary_max", "REAL"),
+        ("salary_period", "TEXT"),
+        ("currency", "TEXT"),
+        ("required_skills", "TEXT"),
+        ("preferred_skills", "TEXT"),
+        ("extraction_evidence", "TEXT"),
+        ("visa_status", "TEXT DEFAULT 'not_specified'"),
+        ("visa_evidence", "TEXT"),
+        ("visa_source_url", "TEXT"),
+        ("visa_verified_at", "TIMESTAMP"),
+        ("source_type", "TEXT DEFAULT 'community_verified'"),
+        ("sources_list", "TEXT"),
+        ("canonical_key", "TEXT"),
+        ("posted_at", "TIMESTAMP"),
+        ("first_seen_at", "TIMESTAMP"),
+        ("last_verified_at", "TIMESTAMP"),
+        ("status", "TEXT DEFAULT 'active'"),
+        ("status_authority", "TEXT DEFAULT 'community_verified'"),
+    ]
+    for col_name, col_def in new_cols:
+        if col_name not in cols:
+            logging.info(f"Adding column {col_name} to internship...")
+            cur.execute(f"ALTER TABLE internship ADD COLUMN {col_name} {col_def}")
+
+    cur.execute("CREATE INDEX IF NOT EXISTS ix_internship_job_type ON internship (job_type)")
+    cur.execute("CREATE INDEX IF NOT EXISTS ix_internship_role_category ON internship (role_category)")
+    cur.execute("CREATE INDEX IF NOT EXISTS ix_internship_visa_status ON internship (visa_status)")
+    cur.execute("CREATE INDEX IF NOT EXISTS ix_internship_posted_at ON internship (posted_at)")
+
+
+def audit_and_migrate_existing_rows(cur):
+    """
+    Re-audits every existing row in database.db so that:
+    - Non-dedicated URLs are marked 'pending_review'
+    - job_type is strictly classified ('internship', 'co-op', 'fellowship', 'new_grad_full_time', 'other_student_program', 'non_student')
+    - role_category and category_evidence are classified using full phrases
+    - posted_at is cleared to NULL on rows where posted_date was just crawl discovery time
+    - international_score is cleared to NULL and visa_status is set with 100% evidence backing
+    """
+    rows = cur.execute("SELECT * FROM internship").fetchall()
+    now_iso = datetime.utcnow().isoformat()
+    non_student_count = 0
+    pending_url_count = 0
+
+    for r in rows:
+        row_id = r["id"]
+        company = (r["company"] or "").strip()
+        role = re.sub(r"[🛂🇺🇸🔒🎓🔥]", "", r["role"] or "").strip()
+        role = re.sub(r"\s+", " ", role)
+        location = (r["location"] or "United States").strip()
+        clean_url = dq.canonicalize_url(r["url"] or "")
+        c_key = dq.compute_canonical_key(company, role, location)
+
+        is_valid_url, _ = dq.is_dedicated_job_detail_url(clean_url)
+        status = r["status"] or "active"
+        if not is_valid_url and status == "active":
+            status = "pending_review"
+            pending_url_count += 1
+
+        job_type = dq.classify_job_type(role)
+        if job_type == "non_student":
+            non_student_count += 1
+            if status == "active":
+                status = "closed"
+
+        role_category, category_evidence = dq.classify_role_category(role)
+        ai_label = 1 if role_category == "ai_ml" else 0
+
+        # Clear unbacked international_score; preserve visa_status only if backed by evidence
+        visa_status = r["visa_status"] if "visa_status" in r.keys() and r["visa_status"] else "not_specified"
+        visa_evidence = r["visa_evidence"] if "visa_evidence" in r.keys() else None
+        visa_source_url = r["visa_source_url"] if "visa_source_url" in r.keys() else None
+        visa_verified_at = r["visa_verified_at"] if "visa_verified_at" in r.keys() else None
+
+        if visa_status != "not_specified" and not visa_evidence:
+            visa_status = "not_specified"
+            visa_evidence = None
+        if not visa_source_url:
+            visa_source_url = clean_url
+        if not visa_verified_at:
+            visa_verified_at = r["last_verified_at"] or now_iso
+
+        # Separate posted_at: only keep posted_at if from public_ats where upstream timestamp was parsed
+        src_type = r["source_type"] or "community_verified"
+        posted_at = r["posted_at"] if "posted_at" in r.keys() else None
+        if src_type in ("community_verified", "official_portal"):
+            posted_at = None
+
+        status_authority = r["status_authority"] if "status_authority" in r.keys() and r["status_authority"] else src_type
+
+        cur.execute(
+            """
+            UPDATE internship
+            SET role = ?, url = ?, canonical_key = ?, status = ?, status_authority = ?,
+                job_type = ?, role_category = ?, category_evidence = ?, ai_label = ?,
+                visa_status = ?, visa_evidence = ?, visa_source_url = ?, visa_verified_at = ?,
+                international_score = NULL, posted_at = ?
+            WHERE id = ?
+            """,
+            (
+                role, clean_url, c_key, status, status_authority,
+                job_type, role_category, category_evidence, ai_label,
+                visa_status, visa_evidence, visa_source_url, visa_verified_at,
+                posted_at, row_id,
+            ),
+        )
+    logging.info(f"Migrated existing rows: {non_student_count} non-student roles isolated, {pending_url_count} generic URLs marked pending_review.")
+
+
 def upsert_sqlite_row(cur, item: dict, source_id: str, source_type: str) -> str:
     company = (item.get("company") or "").strip()
     role = (item.get("role") or "").strip()
@@ -54,26 +169,62 @@ def upsert_sqlite_row(cur, item: dict, source_id: str, source_type: str) -> str:
     if not company or not role or not raw_url or not raw_url.startswith("http"):
         return "rejected"
 
-    location = (item.get("location") or "United States").strip()
     clean_url = dq.canonicalize_url(raw_url)
-    c_key = dq.compute_canonical_key(company, role, location)
-    clean_sal = dq.sanitize_salary(item.get("salary"))
-    clean_req = dq.sanitize_requirements(item.get("requirements"))
-    clean_logo = dq.resolve_logo_url(company, item.get("logo_url"))
-    now_iso = datetime.utcnow().isoformat()
-    posted_dt = item.get("posted_date")
-    if isinstance(posted_dt, datetime):
-        posted_iso = posted_dt.isoformat()
-    else:
-        posted_iso = str(posted_dt) if posted_dt else now_iso
-
-    industry = item.get("industry") or infer_industry(company, role)
-    ai_label = 1 if item.get("ai_label") else 0
-    intl_score = int(item.get("international_score", 7))
+    is_valid_url, _ = dq.is_dedicated_job_detail_url(clean_url)
     incoming_status = item.get("status", "active")
+    if not is_valid_url:
+        incoming_status = "pending_review"
+
+    location = (item.get("location") or "United States").strip()
+    c_key = dq.compute_canonical_key(company, role, location)
+
+    job_type = item.get("job_type") or dq.classify_job_type(role)
+    if job_type == "non_student":
+        return "rejected"
+
+    role_category = item.get("role_category")
+    category_evidence = item.get("category_evidence")
+    if not role_category or role_category == "unclassified":
+        role_category, category_evidence = dq.classify_role_category(role)
+    ai_label = 1 if role_category == "ai_ml" else 0
+
+    clean_sal = dq.sanitize_salary(item.get("salary"))
+    salary_min = item.get("salary_min")
+    salary_max = item.get("salary_max")
+    salary_period = item.get("salary_period")
+    currency = item.get("currency")
+    req_skills = dq.sanitize_requirements(item.get("required_skills") or item.get("requirements"))
+    pref_skills = dq.sanitize_requirements(item.get("preferred_skills"))
+    extraction_evidence = item.get("extraction_evidence")
+
+    now_iso = datetime.utcnow().isoformat()
+    posted_at_val = item.get("posted_at")
+    posted_at_iso = posted_at_val.isoformat() if isinstance(posted_at_val, datetime) else (str(posted_at_val) if posted_at_val else None)
+
+    first_seen_val = item.get("first_seen_at")
+    first_seen_iso = first_seen_val.isoformat() if isinstance(first_seen_val, datetime) else (str(first_seen_val) if first_seen_val else now_iso)
+
+    visa_status = item.get("visa_status") or "not_specified"
+    visa_evidence = item.get("visa_evidence")
+    if visa_status != "not_specified" and not visa_evidence:
+        visa_status = "not_specified"
+    visa_source_url = item.get("visa_source_url") or clean_url
+    visa_verified_val = item.get("visa_verified_at")
+    visa_verified_iso = visa_verified_val.isoformat() if isinstance(visa_verified_val, datetime) else now_iso
+
+    clean_logo = dq.resolve_logo_url(company, item.get("logo_url"))
+    industry = item.get("industry") or infer_industry(company, role)
 
     ex = cur.execute(
-        "SELECT id, source, source_type, sources_list, url, salary, requirements, status FROM internship WHERE canonical_key = ? OR url = ? OR url = ? LIMIT 1",
+        """
+        SELECT id, source, source_type, sources_list, url, salary, salary_min, salary_max,
+               salary_period, currency, required_skills, preferred_skills, extraction_evidence,
+               visa_status, visa_evidence, visa_source_url, visa_verified_at,
+               posted_at, first_seen_at, status, status_authority, role_category, category_evidence
+        FROM internship
+        WHERE canonical_key = ? OR url = ? OR url = ?
+        LIMIT 1
+        """,
         (c_key, clean_url, raw_url),
     ).fetchone()
 
@@ -88,33 +239,74 @@ def upsert_sqlite_row(cur, item: dict, source_id: str, source_type: str) -> str:
 
         old_prio = dq.SOURCE_PRIORITY.get(ex["source_type"] or "community_verified", 0)
         new_prio = dq.SOURCE_PRIORITY.get(source_type, 0)
-        new_src = source_id if new_prio >= old_prio else ex["source"]
-        new_src_type = source_type if new_prio >= old_prio else ex["source_type"]
-        new_url = clean_url if new_prio >= old_prio else ex["url"]
-        new_status = incoming_status if new_prio >= old_prio else ex["status"]
+        auth_prio = dq.SOURCE_PRIORITY.get(ex["status_authority"] or ex["source_type"] or "community_verified", 0)
+
+        new_src = source_id if (new_prio >= old_prio and is_valid_url) else ex["source"]
+        new_src_type = source_type if (new_prio >= old_prio and is_valid_url) else ex["source_type"]
+        new_url = clean_url if (new_prio >= old_prio and is_valid_url) else ex["url"]
+
+        # Requirement 7: Source-level authority protection on status transitions
+        new_status = ex["status"]
+        new_authority = ex["status_authority"] or ex["source_type"]
+        if incoming_status in ("closed", "expired"):
+            if new_prio >= auth_prio or source_id == ex["source"]:
+                new_status = incoming_status
+                new_authority = source_type
+        elif incoming_status == "active" and is_valid_url:
+            if ex["status"] in ("closed", "expired"):
+                if new_prio > auth_prio or (
+                    new_prio == auth_prio and source_type in ("official_api", "public_ats", "official_portal")
+                ):
+                    new_status = "active"
+                    new_authority = source_type
+            elif ex["status"] == "pending_review":
+                new_status = "active"
+                new_authority = source_type
+            else:
+                if new_prio >= auth_prio:
+                    new_authority = source_type
+
+        # Update compensation & skills when incoming has verified values
+        final_sal = clean_sal if clean_sal else ex["salary"]
+        final_smin = salary_min if salary_min is not None else ex["salary_min"]
+        final_smax = salary_max if salary_max is not None else ex["salary_max"]
+        final_sper = salary_period if salary_period else ex["salary_period"]
+        final_curr = currency if currency else ex["currency"]
+        final_req = req_skills if req_skills else ex["required_skills"]
+        final_pref = pref_skills if pref_skills else ex["preferred_skills"]
+        final_ev = extraction_evidence if extraction_evidence else ex["extraction_evidence"]
+
+        # Update visa status when incoming has explicit evidence
+        final_vstatus = visa_status if visa_status != "not_specified" else ex["visa_status"]
+        final_vev = visa_evidence if visa_status != "not_specified" else ex["visa_evidence"]
+        final_vurl = visa_source_url if visa_status != "not_specified" else ex["visa_source_url"]
+        final_vver = visa_verified_iso if visa_status != "not_specified" else ex["visa_verified_at"]
+
+        final_posted = posted_at_iso if posted_at_iso else ex["posted_at"]
+        final_cat = role_category if role_category != "unclassified" else ex["role_category"]
+        final_cat_ev = category_evidence if role_category != "unclassified" else ex["category_evidence"]
 
         cur.execute(
             """
             UPDATE internship
             SET source = ?, source_type = ?, sources_list = ?, url = ?, canonical_key = ?,
-                salary = COALESCE(?, salary),
-                requirements = COALESCE(?, requirements),
-                logo_url = ?,
-                last_verified_at = ?,
-                status = ?
+                job_type = ?, role_category = ?, category_evidence = ?, ai_label = ?,
+                salary = ?, salary_min = ?, salary_max = ?, salary_period = ?, currency = ?,
+                requirements = ?, required_skills = ?, preferred_skills = ?, extraction_evidence = ?,
+                visa_status = ?, visa_evidence = ?, visa_source_url = ?, visa_verified_at = ?,
+                international_score = NULL,
+                logo_url = ?, posted_at = ?, posted_date = COALESCE(?, posted_date),
+                last_verified_at = ?, status = ?, status_authority = ?
             WHERE id = ?
             """,
             (
-                new_src,
-                new_src_type,
-                json.dumps(ex_sources),
-                new_url,
-                c_key,
-                clean_sal,
-                clean_req,
-                clean_logo,
-                now_iso,
-                new_status,
+                new_src, new_src_type, json.dumps(ex_sources), new_url, c_key,
+                job_type, final_cat, final_cat_ev, 1 if final_cat == "ai_ml" else 0,
+                final_sal, final_smin, final_smax, final_sper, final_curr,
+                final_req, final_req, final_pref, final_ev,
+                final_vstatus, final_vev, final_vurl, final_vver,
+                clean_logo, final_posted, final_posted,
+                now_iso, new_status, new_authority,
                 ex_id,
             ),
         )
@@ -123,44 +315,24 @@ def upsert_sqlite_row(cur, item: dict, source_id: str, source_type: str) -> str:
     cur.execute(
         """
         INSERT INTO internship (
-            company, role, location, industry, ai_label, requirements, salary,
-            international_score, logo_url, url, source, source_type, sources_list,
-            canonical_key, posted_date, first_seen_at, last_verified_at, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            company, role, location, industry, job_type, role_category, category_evidence, ai_label,
+            salary, salary_min, salary_max, salary_period, currency,
+            requirements, required_skills, preferred_skills, extraction_evidence,
+            visa_status, visa_evidence, visa_source_url, visa_verified_at, international_score,
+            logo_url, url, source, source_type, sources_list, canonical_key,
+            posted_at, posted_date, first_seen_at, last_verified_at, status, status_authority
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            company,
-            role,
-            location,
-            industry,
-            ai_label,
-            clean_req,
-            clean_sal,
-            intl_score,
-            clean_logo,
-            clean_url,
-            source_id,
-            source_type,
-            json.dumps([source_id]),
-            c_key,
-            posted_iso,
-            posted_iso,
-            now_iso,
-            incoming_status,
+            company, role, location, industry, job_type, role_category, category_evidence, ai_label,
+            clean_sal, salary_min, salary_max, salary_period, currency,
+            req_skills, req_skills, pref_skills, extraction_evidence,
+            visa_status, visa_evidence, visa_source_url, visa_verified_iso,
+            clean_logo, clean_url, source_id, source_type, json.dumps([source_id]), c_key,
+            posted_at_iso, posted_at_iso or first_seen_iso, first_seen_iso, now_iso, incoming_status, source_type,
         ),
     )
     return "inserted"
-
-
-def record_alert_sqlite(cur, source_id: str, source_name: str, alert_type: str, severity: str, message: str, details: dict):
-    now_iso = datetime.utcnow().isoformat()
-    cur.execute(
-        """
-        INSERT INTO crawleralert (source_id, source_name, alert_type, severity, message, details, created_at, resolved)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-        """,
-        (source_id, source_name, alert_type, severity, message, json.dumps(details), now_iso),
-    )
 
 
 def crawl_simplify_readme(source: dict, cur):
@@ -191,7 +363,8 @@ def crawl_simplify_readme(source: dict, cur):
                 continue
 
             raw_role = role_col.get_text(" ", strip=True)
-            no_sponsor = "🛂" in raw_role or "🛂" in raw_company or "🇺🇸" in raw_role or "🇺🇸" in raw_company
+            has_no_sponsor = "🛂" in raw_role or "🛂" in raw_company
+            has_us_citizen = "🇺🇸" in raw_role or "🇺🇸" in raw_company
             is_closed = "🔒" in app_col.get_text(strip=True) or "🔒" in raw_role
 
             role_clean = re.sub(r"[🛂🇺🇸🔒🎓🔥]", "", raw_role).strip()
@@ -209,49 +382,75 @@ def crawl_simplify_readme(source: dict, cur):
 
             c_key = dq.compute_canonical_key(company_name, role_clean, loc_clean)
             if is_closed:
+                # Only close if current status_authority is community_verified
                 cur.execute(
-                    "UPDATE internship SET status = 'closed', last_verified_at = ? WHERE canonical_key = ? AND status = 'active'",
+                    """
+                    UPDATE internship
+                    SET status = 'closed', last_verified_at = ?
+                    WHERE canonical_key = ? AND status = 'active'
+                      AND COALESCE(status_authority, 'community_verified') = 'community_verified'
+                    """,
                     (datetime.utcnow().isoformat(), c_key),
                 )
                 if cur.rowcount > 0:
                     closed += cur.rowcount
                 continue
 
+            # Requirement 1: Must have a direct application link in app_col (never fall back to company homepage)
             link_tag = app_col.find("a")
             if not link_tag or not link_tag.get("href"):
                 continue
             job_url = dq.canonicalize_url(link_tag.get("href"))
+            valid_url, _ = dq.is_dedicated_job_detail_url(job_url)
+            if not valid_url:
+                continue
 
-            posted_date = datetime.utcnow()
+            # Requirement 2: Community age is an estimate of discovery, NOT an employer posted_at
+            first_seen_dt = datetime.utcnow()
             if len(cols) >= 5:
                 age_text = cols[4].get_text(strip=True).lower()
                 digits = re.sub(r"[^0-9]", "", age_text)
                 if digits:
                     val = int(digits)
                     if "h" in age_text:
-                        posted_date = datetime.utcnow() - timedelta(hours=val)
+                        first_seen_dt = datetime.utcnow() - timedelta(hours=val)
                     elif "d" in age_text:
-                        posted_date = datetime.utcnow() - timedelta(days=val)
+                        first_seen_dt = datetime.utcnow() - timedelta(days=val)
                     elif "mo" in age_text:
-                        posted_date = datetime.utcnow() - timedelta(days=val * 30)
+                        first_seen_dt = datetime.utcnow() - timedelta(days=val * 30)
 
-            intl_score = 1 if no_sponsor else 7
+            visa_info = dq.classify_visa_status(
+                jd_text=None,
+                source_url=job_url,
+                explicit_flags={
+                    "has_no_sponsor_flag": has_no_sponsor,
+                    "has_us_citizen_flag": has_us_citizen,
+                },
+            )
+            role_category, category_evidence = dq.classify_role_category(role_clean)
+            job_type = dq.classify_job_type(role_clean)
+
             item = {
                 "company": company_name,
                 "role": role_clean,
                 "location": loc_clean,
                 "url": job_url,
                 "industry": infer_industry(company_name, role_clean),
-                "ai_label": bool(re.search(r"\b(ai|ml|machine learning|data science|deep learning|llm|nlp|computer vision)\b", role_clean, re.IGNORECASE)),
-                "posted_date": posted_date,
-                "salary": None,
-                "requirements": None,
-                "international_score": intl_score,
+                "job_type": job_type,
+                "role_category": role_category,
+                "category_evidence": category_evidence,
+                "posted_at": None,  # No employer publication date in README table
+                "first_seen_at": first_seen_dt,
+                "visa_status": visa_info["visa_status"],
+                "visa_evidence": visa_info["visa_evidence"],
+                "visa_source_url": visa_info["visa_source_url"],
+                "visa_verified_at": visa_info["visa_verified_at"],
                 "logo_url": dq.resolve_logo_url(company_name),
                 "status": "active",
             }
             action = upsert_sqlite_row(cur, item, source["id"], "community_verified")
-            fetched += 1
+            if action != "rejected":
+                fetched += 1
             if action == "inserted":
                 inserted += 1
             elif action == "merged":
@@ -261,23 +460,23 @@ def crawl_simplify_readme(source: dict, cur):
 
 
 def main():
-    with open(SOURCES_PATH, "r") as f:
-        sources = json.load(f)
-    sources.sort(key=lambda s: dq.SOURCE_PRIORITY.get(s.get("source_type", "official_portal"), 50), reverse=True)
-
-    status_map = {}
-    if os.path.exists(STATUS_PATH):
-        try:
-            with open(STATUS_PATH, "r") as f:
-                status_map = json.load(f)
-        except Exception:
-            status_map = {}
-
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    ensure_schema(cur)
+    audit_and_migrate_existing_rows(cur)
+    conn.commit()
+
+    if "--offline-only" in sys.argv:
+        conn.close()
+        return
+
+    simplify_only = "--simplify-only" in sys.argv
+
+    with open(SOURCES_PATH, "r") as f:
+        sources = json.load(f)
+    sources.sort(key=lambda s: dq.SOURCE_PRIORITY.get(s.get("source_type", "official_portal"), 50), reverse=True)
 
     for src in sources:
         if not src.get("enabled", True):
@@ -287,172 +486,31 @@ def main():
         src_type = src.get("type")
         src_tier = src.get("source_type", "official_portal")
 
-        # Skip Playwright browser-only portals in lightweight sync, but evaluate any existing 0-item portals for alerts
-        if src_type in ("nasa_official", "goldman_sachs_official", "jpmorgan_chase_official"):
-            prev = status_map.get(src_name, {})
-            if prev.get("items_saved", 0) == 0:
-                msg = f"{src_name} returned 0 listings during last browser crawl (possible anti-bot wall or closed recruiting window)."
-                # Avoid duplicate unresolved alerts
-                existing_alert = cur.execute(
-                    "SELECT id FROM crawleralert WHERE source_id = ? AND resolved = 0 LIMIT 1",
-                    (src_id,),
-                ).fetchone()
-                if not existing_alert:
-                    record_alert_sqlite(cur, src_id, src_name, "zero_results", "warning", msg, {"items_fetched": 0})
-                status_map[src_name] = {
-                    "source_id": src_id,
-                    "source_name": src_name,
-                    "source_type": src_tier,
-                    "date": prev.get("date", today_str),
-                    "timestamp": prev.get("timestamp", datetime.utcnow().isoformat()),
-                    "items_fetched": 0,
-                    "items_saved": 0,
-                    "items_merged": 0,
-                    "items_closed": 0,
-                    "status": "warning",
-                    "alert": msg,
-                }
+        if simplify_only and src_type != "github_readme":
             continue
-
-        if src_type in ("meta_official", "apple_official", "google_official", "amazon_official"):
-            # Keep existing portal status metadata enriched with source_id and source_type
-            prev = status_map.get(src_name, {})
-            if prev:
-                prev["source_id"] = src_id
-                prev["source_name"] = src_name
-                prev["source_type"] = src_tier
-                prev.setdefault("items_fetched", prev.get("items_saved", 0))
-                prev.setdefault("items_merged", 0)
-                prev.setdefault("items_closed", 0)
-                status_map[src_name] = prev
+        if src_type not in ("greenhouse_ats", "lever_ats", "microsoft_official", "morgan_stanley_official", "github_readme"):
             continue
 
         logging.info(f"Syncing [{src_tier}] {src_name} ({src_id})...")
-        fetched = 0
-        inserted = 0
-        merged = 0
-        closed = 0
-        err_str = None
-
         try:
             if src_type == "github_readme":
-                fetched, inserted, merged, closed = crawl_simplify_readme(src, cur)
+                crawl_simplify_readme(src, cur)
             elif src_type == "greenhouse_ats":
-                items = crawl_greenhouse(src)
-                fetched = len(items)
-                for item in items:
-                    act = upsert_sqlite_row(cur, item, src_id, src_tier)
-                    if act == "inserted":
-                        inserted += 1
-                    elif act == "merged":
-                        merged += 1
+                for item in crawl_greenhouse(src):
+                    upsert_sqlite_row(cur, item, src_id, src_tier)
             elif src_type == "lever_ats":
-                items = crawl_lever(src)
-                fetched = len(items)
-                for item in items:
-                    act = upsert_sqlite_row(cur, item, src_id, src_tier)
-                    if act == "inserted":
-                        inserted += 1
-                    elif act == "merged":
-                        merged += 1
+                for item in crawl_lever(src):
+                    upsert_sqlite_row(cur, item, src_id, src_tier)
             elif src_type == "microsoft_official":
-                items = crawl_microsoft(src)
-                fetched = len(items)
-                for item in items:
-                    act = upsert_sqlite_row(cur, item, src_id, src_tier)
-                    if act == "inserted":
-                        inserted += 1
-                    elif act == "merged":
-                        merged += 1
+                for item in crawl_microsoft(src):
+                    upsert_sqlite_row(cur, item, src_id, src_tier)
             elif src_type == "morgan_stanley_official":
-                items = crawl_morgan_stanley(src)
-                fetched = len(items)
-                for item in items:
-                    act = upsert_sqlite_row(cur, item, src_id, src_tier)
-                    if act == "inserted":
-                        inserted += 1
-                    elif act == "merged":
-                        merged += 1
+                for item in crawl_morgan_stanley(src):
+                    upsert_sqlite_row(cur, item, src_id, src_tier)
+            conn.commit()
         except Exception as e:
-            err_str = str(e)
             logging.error(f"Error syncing {src_name}: {e}")
 
-        now_iso = datetime.utcnow().isoformat()
-        if err_str:
-            msg = f"Failed to collect from {src_name}: {err_str}"
-            record_alert_sqlite(cur, src_id, src_name, "exception", "critical", msg, {"error": err_str})
-            status_map[src_name] = {
-                "source_id": src_id,
-                "source_name": src_name,
-                "source_type": src_tier,
-                "date": today_str,
-                "timestamp": now_iso,
-                "items_fetched": 0,
-                "items_saved": 0,
-                "items_merged": 0,
-                "items_closed": 0,
-                "status": "failed",
-                "alert": msg,
-            }
-        elif fetched == 0:
-            msg = f"{src_name} returned 0 active internship listings."
-            record_alert_sqlite(cur, src_id, src_name, "zero_results", "warning", msg, {"items_fetched": 0})
-            status_map[src_name] = {
-                "source_id": src_id,
-                "source_name": src_name,
-                "source_type": src_tier,
-                "date": today_str,
-                "timestamp": now_iso,
-                "items_fetched": 0,
-                "items_saved": 0,
-                "items_merged": 0,
-                "items_closed": 0,
-                "status": "warning",
-                "alert": msg,
-            }
-        else:
-            cur.execute("UPDATE crawleralert SET resolved = 1, resolved_at = ? WHERE source_id = ? AND resolved = 0", (now_iso, src_id))
-            status_map[src_name] = {
-                "source_id": src_id,
-                "source_name": src_name,
-                "source_type": src_tier,
-                "date": today_str,
-                "timestamp": now_iso,
-                "items_fetched": fetched,
-                "items_saved": inserted,
-                "items_merged": merged,
-                "items_closed": closed,
-                "status": "success",
-                "alert": None,
-            }
-        conn.commit()
-
-    with open(STATUS_PATH, "w") as f:
-        json.dump(status_map, f, indent=2)
-
-    # Print summary stats
-    stats = cur.execute(
-        "SELECT status, COUNT(*) as c FROM internship GROUP BY status"
-    ).fetchall()
-    tiers = cur.execute(
-        "SELECT source_type, COUNT(*) as c FROM internship WHERE status = 'active' GROUP BY source_type"
-    ).fetchall()
-    real_salaries = cur.execute(
-        "SELECT COUNT(*) FROM internship WHERE salary IS NOT NULL AND status = 'active'"
-    ).fetchone()[0]
-    real_reqs = cur.execute(
-        "SELECT COUNT(*) FROM internship WHERE requirements IS NOT NULL AND status = 'active'"
-    ).fetchone()[0]
-    multi_source = cur.execute(
-        "SELECT COUNT(*) FROM internship WHERE sources_list LIKE '%,%'"
-    ).fetchone()[0]
-    alerts_count = cur.execute(
-        "SELECT COUNT(*) FROM crawleralert WHERE resolved = 0"
-    ).fetchone()[0]
-
-    logging.info(f"By status: {[(r['status'], r['c']) for r in stats]}")
-    logging.info(f"Active by source_type: {[(r['source_type'], r['c']) for r in tiers]}")
-    logging.info(f"Verified salaries: {real_salaries}, Verified requirements: {real_reqs}, Cross-source merged: {multi_source}, Active alerts: {alerts_count}")
     conn.close()
 
 

@@ -36,6 +36,9 @@ function App() {
 
   const [filters, setFilters] = useState({
     location: '',
+    visa_status: '',
+    role_category: '',
+    job_type: '',
     min_score: null,
     ai_only: false,
     company_type: '',
@@ -56,6 +59,9 @@ function App() {
       if (sourceId) params.source = sourceId;
       if (currentFilters.source_type) params.source_type = currentFilters.source_type;
       if (currentFilters.location) params.location = currentFilters.location;
+      if (currentFilters.visa_status) params.visa_status = currentFilters.visa_status;
+      if (currentFilters.role_category) params.role_category = currentFilters.role_category;
+      if (currentFilters.job_type) params.job_type = currentFilters.job_type;
       if (currentFilters.min_score) params.min_score = currentFilters.min_score;
       if (currentFilters.ai_only) params.ai_only = true;
       if (currentFilters.company_type) params.company_type = currentFilters.company_type;
@@ -123,6 +129,9 @@ function App() {
   const handleResetFilters = () => {
     setFilters({
       location: '',
+      visa_status: '',
+      role_category: '',
+      job_type: '',
       min_score: null,
       ai_only: false,
       company_type: '',

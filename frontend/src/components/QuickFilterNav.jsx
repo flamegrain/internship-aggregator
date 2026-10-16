@@ -19,32 +19,35 @@ const CITIES = [
 ];
 
 const VISA_OPTIONS = [
-  { label: 'Any Visa Status', value: '' },
-  { label: '🌟 High Odds Sponsor (Score 8+)', value: 8 },
-  { label: '👍 CPT / OPT Friendly (Score 5+)', value: 5 },
+  { label: 'All Work Authorization Statuses', value: '' },
+  { label: '🌍 Open to F-1 / No Restriction Stated', value: 'open_to_international' },
+  { label: '✅ Sponsorship Explicitly Supported', value: 'sponsorship_explicitly_supported' },
+  { label: '📄 Not Specified in JD', value: 'not_specified' },
+  { label: '🇺🇸 Explicitly Restricted (Citizen / No Sponsor)', value: 'explicitly_restricted' },
 ];
 
 const SALARY_OPTIONS = [
-  { label: 'Any Disclosed Pay', value: '' },
-  { label: '💰 Verified Disclosed Pay ($40+/hr)', value: true },
+  { label: 'Any Compensation Status', value: '' },
+  { label: '💰 Verified Disclosed Pay Only', value: true },
 ];
 
-const COMPANY_TYPES = [
-  { label: 'All Sectors', value: '' },
-  { label: '🏢 Big Tech (FAANG & Unicorns)', value: 'big_tech' },
-  { label: '📈 Quant & Wall St Finance', value: 'quant_finance' },
-  { label: '🤖 GenAI & LLM Unicorns', value: 'ai_ml' },
-  { label: '🚀 Aerospace & Defense', value: 'defense_aerospace' },
+const ROLE_CATEGORIES = [
+  { label: 'All Role Categories', value: '' },
+  { label: '💻 Software Engineering', value: 'software_engineering' },
+  { label: '🤖 AI & Machine Learning', value: 'ai_ml' },
+  { label: '📊 Data Science & Analytics', value: 'data_analytics' },
+  { label: '🔬 Research Scientist / Intern', value: 'research' },
+  { label: '📈 Quant / Product / Hardware', value: 'other' },
 ];
 
 const PRESETS = [
-  { id: 'official', label: '🛡️ Official API & ATS', apply: { source_type: 'official_verified', min_score: null, location: '', company_type: '', high_salary: false, ai_only: false } },
-  { id: 'visa8', label: '🌟 Top F-1 Sponsor', apply: { min_score: 8, source_type: '', location: '', company_type: '', high_salary: false, ai_only: false } },
-  { id: 'ai', label: '🤖 GenAI & LLM Hub', apply: { ai_only: true, company_type: 'ai_ml', source_type: '', min_score: null, location: '', high_salary: false } },
-  { id: 'salary', label: '💰 Verified Pay Disclosed', apply: { high_salary: true, source_type: '', min_score: null, location: '', company_type: '', ai_only: false } },
-  { id: 'remote', label: '🏠 Fully Remote (WFH)', apply: { location: 'Remote', source_type: '', min_score: null, company_type: '', high_salary: false, ai_only: false } },
-  { id: 'nyc', label: '🗽 NYC Finance & Tech', apply: { location: 'New York', source_type: '', min_score: null, company_type: '', high_salary: false, ai_only: false } },
-  { id: 'bigtech', label: '🏢 Silicon Valley Big Tech', apply: { company_type: 'big_tech', source_type: '', min_score: null, location: '', high_salary: false, ai_only: false } },
+  { id: 'official', label: '🛡️ Official API & ATS', apply: { source_type: 'official_verified', visa_status: '', role_category: '', location: '', company_type: '', high_salary: false, ai_only: false } },
+  { id: 'visa_open', label: '🌍 No Citizenship Restriction', apply: { visa_status: 'open_to_international', source_type: '', role_category: '', location: '', company_type: '', high_salary: false, ai_only: false } },
+  { id: 'swe', label: '💻 Software Engineering', apply: { role_category: 'software_engineering', ai_only: false, company_type: '', source_type: '', visa_status: '', location: '', high_salary: false } },
+  { id: 'ai', label: '🤖 AI & Machine Learning', apply: { role_category: 'ai_ml', ai_only: false, company_type: '', source_type: '', visa_status: '', location: '', high_salary: false } },
+  { id: 'salary', label: '💰 Verified Pay Disclosed', apply: { high_salary: true, source_type: '', visa_status: '', role_category: '', location: '', company_type: '', ai_only: false } },
+  { id: 'remote', label: '🏠 Fully Remote (WFH)', apply: { location: 'Remote', source_type: '', visa_status: '', role_category: '', company_type: '', high_salary: false, ai_only: false } },
+  { id: 'nyc', label: '🗽 NYC Finance & Tech', apply: { location: 'New York', source_type: '', visa_status: '', role_category: '', company_type: '', high_salary: false, ai_only: false } },
 ];
 
 const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
@@ -62,7 +65,7 @@ const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Student Priority Filters • Zero BS Recruiting
+              Auditable Student Filters • Evidence-Backed Classification
             </h3>
             {activeCount > 0 && (
               <span className="bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-bold px-2 py-0.5 rounded-full">
@@ -81,7 +84,7 @@ const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
           )}
         </div>
 
-        {/* 1-Click Fast Presets (US College Student Favorites) */}
+        {/* 1-Click Fast Presets */}
         <div className="mb-4">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
             <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-1">
@@ -90,12 +93,12 @@ const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
             {PRESETS.map((p) => {
               const isMatch = 
                 (p.id === 'official' && filters.source_type === 'official_verified') ||
-                (p.id === 'visa8' && filters.min_score === 8) ||
-                (p.id === 'ai' && (filters.ai_only || filters.company_type === 'ai_ml')) ||
+                (p.id === 'visa_open' && filters.visa_status === 'open_to_international') ||
+                (p.id === 'swe' && filters.role_category === 'software_engineering') ||
+                (p.id === 'ai' && filters.role_category === 'ai_ml') ||
                 (p.id === 'salary' && filters.high_salary) ||
                 (p.id === 'remote' && filters.location === 'Remote') ||
-                (p.id === 'nyc' && filters.location === 'New York') ||
-                (p.id === 'bigtech' && filters.company_type === 'big_tech');
+                (p.id === 'nyc' && filters.location === 'New York');
 
               return (
                 <button
@@ -141,15 +144,15 @@ const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
             </select>
           </div>
 
-          {/* Visa Sponsorship */}
+          {/* Auditable Visa Status */}
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1">
               <Globe className="w-3.5 h-3.5 text-emerald-500" />
-              F-1 / Visa Sponsorship
+              Work Auth / Visa Status
             </label>
             <select
-              value={filters.min_score || ''}
-              onChange={(e) => onFilterChange({ min_score: e.target.value ? Number(e.target.value) : null })}
+              value={filters.visa_status || ''}
+              onChange={(e) => onFilterChange({ visa_status: e.target.value, min_score: null })}
               className="w-full text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
             >
               {VISA_OPTIONS.map((v) => (
@@ -160,11 +163,11 @@ const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
             </select>
           </div>
 
-          {/* Hourly Pay */}
+          {/* Disclosed Compensation */}
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1">
               <DollarSign className="w-3.5 h-3.5 text-amber-500" />
-              Disclosed Compensation
+              Structured Compensation
             </label>
             <select
               value={filters.high_salary ? 'true' : ''}
@@ -179,18 +182,18 @@ const QuickFilterNav = ({ filters, onFilterChange, onReset }) => {
             </select>
           </div>
 
-          {/* Industry Track */}
+          {/* Role Category */}
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1">
               <Building2 className="w-3.5 h-3.5 text-indigo-500" />
-              Industry Track
+              Role Category
             </label>
             <select
-              value={filters.company_type || ''}
-              onChange={(e) => onFilterChange({ company_type: e.target.value })}
+              value={filters.role_category || ''}
+              onChange={(e) => onFilterChange({ role_category: e.target.value, company_type: '' })}
               className="w-full text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
             >
-              {COMPANY_TYPES.map((t) => (
+              {ROLE_CATEGORIES.map((t) => (
                 <option key={t.label} value={t.value}>
                   {t.label}
                 </option>

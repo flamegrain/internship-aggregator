@@ -22,6 +22,10 @@ from data_quality import (
     canonicalize_url,
     compute_canonical_key,
     resolve_logo_url,
+    is_dedicated_job_detail_url,
+    classify_job_type,
+    classify_visa_status,
+    classify_role_category,
     upsert_or_merge_internship,
     reconcile_source_snapshot,
     detect_expired_and_stale_jobs,
@@ -277,47 +281,56 @@ def process_github_readme(
 
                 canonical_key = compute_canonical_key(company_name, role_clean, location_clean)
 
-                # If role is marked closed (🔒), mark any existing matching record closed and skip inserting
+                # If role is marked closed (🔒), only close if community_verified has >= authority than existing record's status_authority
                 if is_closed:
                     existing_item = session.exec(
                         select(Internship).where(Internship.canonical_key == canonical_key)
                     ).first()
                     if existing_item and existing_item.status == "active":
-                        existing_item.status = "closed"
-                        existing_item.last_verified_at = datetime.utcnow()
-                        session.add(existing_item)
-                        closed_count += 1
+                        existing_auth = SOURCE_PRIORITY.get(existing_item.status_authority or existing_item.source_type or "community_verified", 50)
+                        incoming_auth = SOURCE_PRIORITY.get(source_tier, 50)
+                        if incoming_auth >= existing_auth:
+                            existing_item.status = "closed"
+                            existing_item.status_authority = source_tier
+                            existing_item.last_verified_at = datetime.utcnow()
+                            session.add(existing_item)
+                            closed_count += 1
                     continue
 
                 if not job_url:
                     continue
 
-                # Parse age column
-                posted_date = datetime.utcnow()
+                valid_url, _ = is_dedicated_job_detail_url(job_url)
+                if not valid_url:
+                    continue
+
+                # Parse age column into first_seen_at; keep posted_at = None since community age is not an employer publication timestamp
+                first_seen_at = datetime.utcnow()
                 if len(cols) >= 5:
                     age_text = cols[4].get_text(strip=True).lower()
                     digits = re.sub(r"[^0-9]", "", age_text)
                     if digits:
                         val = int(digits)
                         if "h" in age_text:
-                            posted_date = datetime.utcnow() - timedelta(hours=val)
+                            first_seen_at = datetime.utcnow() - timedelta(hours=val)
                         elif "d" in age_text:
-                            posted_date = datetime.utcnow() - timedelta(days=val)
+                            first_seen_at = datetime.utcnow() - timedelta(days=val)
                         elif "mo" in age_text:
-                            posted_date = datetime.utcnow() - timedelta(days=val * 30)
+                            first_seen_at = datetime.utcnow() - timedelta(days=val * 30)
 
-                if has_no_sponsor_flag or has_us_citizen_flag:
-                    intl_score = 1
-                elif any(d in company_name.upper() for d in ["DEFENSE", "LOCKHEED", "NORTHROP", "RAYTHEON", "CACI", "LEIDOS", "BOOZ ALLEN", "GENERAL DYNAMICS"]):
-                    intl_score = 1
-                else:
-                    intl_score = calculate_international_score(f"{role_clean} {company_name}")
+                visa_info = classify_visa_status(
+                    jd_text=None,
+                    source_url=job_url,
+                    explicit_flags={
+                        "has_no_sponsor_flag": has_no_sponsor_flag,
+                        "has_us_citizen_flag": has_us_citizen_flag,
+                    },
+                )
+                cat_info = classify_role_category(role_clean, None)
+                job_type = classify_job_type(role_clean, None)
 
                 logo_url = resolve_logo_url(company_name)
                 industry = infer_industry(company_name, role_clean)
-                ai_label = bool(
-                    re.search(r"\b(ai|ml|machine learning|data science|deep learning|llm|nlp|computer vision)\b", role_clean, re.IGNORECASE)
-                )
 
                 item_data = {
                     "company": company_name,
@@ -325,14 +338,31 @@ def process_github_readme(
                     "location": location_clean,
                     "url": job_url,
                     "industry": industry,
-                    "ai_label": ai_label,
-                    "posted_date": posted_date,
-                    "requirements": None,  # Never inject fake requirements
-                    "salary": None,        # Never inject placeholder salary
+                    "job_type": job_type,
+                    "role_category": cat_info["role_category"],
+                    "category_evidence": cat_info["category_evidence"],
+                    "ai_label": cat_info["ai_label"],
+                    "posted_at": None,
+                    "posted_date": first_seen_at,
+                    "first_seen_at": first_seen_at,
+                    "requirements": None,
+                    "required_skills": None,
+                    "preferred_skills": None,
+                    "salary": None,
+                    "salary_min": None,
+                    "salary_max": None,
+                    "salary_period": None,
+                    "currency": None,
+                    "extraction_evidence": None,
                     "deadline": None,
-                    "international_score": intl_score,
+                    "visa_status": visa_info["visa_status"],
+                    "visa_evidence": visa_info["visa_evidence"],
+                    "visa_source_url": visa_info["visa_source_url"],
+                    "visa_verified_at": visa_info["visa_verified_at"],
+                    "international_score": None,
                     "logo_url": logo_url,
                     "status": "active",
+                    "status_authority": source_tier,
                 }
 
                 _, action = upsert_or_merge_internship(
@@ -362,7 +392,7 @@ def process_github_readme(
 def ensure_schema_and_clean_production_data(session: Session) -> Dict[str, int]:
     """
     Idempotent schema migration & production data sanitization:
-    1. Adds provenance, timestamp, canonical_key, and status columns if missing.
+    1. Adds provenance, timestamp, canonical_key, job_type, role_category, visa_status, structured salary/skills, and status_authority columns if missing.
     2. Strips all banned placeholder salaries ('$30 - $60 / hr', etc.) and fake requirements ('Python, React, SQL').
     3. Deletes or isolates any simulated listings.
     4. Fixes broken '.com' logo URLs and backfills source, source_type, first_seen_at, last_verified_at, status.
@@ -379,6 +409,22 @@ def ensure_schema_and_clean_production_data(session: Session) -> Dict[str, int]:
         ("first_seen_at", "ALTER TABLE internship ADD COLUMN first_seen_at TIMESTAMP"),
         ("last_verified_at", "ALTER TABLE internship ADD COLUMN last_verified_at TIMESTAMP"),
         ("status", "ALTER TABLE internship ADD COLUMN status TEXT DEFAULT 'active'"),
+        ("job_type", "ALTER TABLE internship ADD COLUMN job_type TEXT DEFAULT 'internship'"),
+        ("role_category", "ALTER TABLE internship ADD COLUMN role_category TEXT DEFAULT 'unclassified'"),
+        ("category_evidence", "ALTER TABLE internship ADD COLUMN category_evidence TEXT"),
+        ("salary_min", "ALTER TABLE internship ADD COLUMN salary_min REAL"),
+        ("salary_max", "ALTER TABLE internship ADD COLUMN salary_max REAL"),
+        ("salary_period", "ALTER TABLE internship ADD COLUMN salary_period TEXT"),
+        ("currency", "ALTER TABLE internship ADD COLUMN currency TEXT"),
+        ("required_skills", "ALTER TABLE internship ADD COLUMN required_skills TEXT"),
+        ("preferred_skills", "ALTER TABLE internship ADD COLUMN preferred_skills TEXT"),
+        ("extraction_evidence", "ALTER TABLE internship ADD COLUMN extraction_evidence TEXT"),
+        ("visa_status", "ALTER TABLE internship ADD COLUMN visa_status TEXT DEFAULT 'not_specified'"),
+        ("visa_evidence", "ALTER TABLE internship ADD COLUMN visa_evidence TEXT"),
+        ("visa_source_url", "ALTER TABLE internship ADD COLUMN visa_source_url TEXT"),
+        ("visa_verified_at", "ALTER TABLE internship ADD COLUMN visa_verified_at TIMESTAMP"),
+        ("posted_at", "ALTER TABLE internship ADD COLUMN posted_at TIMESTAMP"),
+        ("status_authority", "ALTER TABLE internship ADD COLUMN status_authority TEXT DEFAULT 'community_verified'"),
     ]
     for col_name, stmt in alter_statements:
         if col_name not in existing_cols:
@@ -390,6 +436,9 @@ def ensure_schema_and_clean_production_data(session: Session) -> Dict[str, int]:
     session.exec(text("CREATE INDEX IF NOT EXISTS ix_internship_canonical_key ON internship (canonical_key)"))
     session.exec(text("CREATE INDEX IF NOT EXISTS ix_internship_status ON internship (status)"))
     session.exec(text("CREATE INDEX IF NOT EXISTS ix_internship_source_type ON internship (source_type)"))
+    session.exec(text("CREATE INDEX IF NOT EXISTS ix_internship_job_type ON internship (job_type)"))
+    session.exec(text("CREATE INDEX IF NOT EXISTS ix_internship_role_category ON internship (role_category)"))
+    session.exec(text("CREATE INDEX IF NOT EXISTS ix_internship_visa_status ON internship (visa_status)"))
     session.commit()
 
     all_jobs = session.exec(select(Internship)).all()

@@ -12,6 +12,8 @@ from .email_service import is_valid_email, generate_digest_html, send_digest_ema
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+DEFAULT_INTERNSHIP_TYPES = ["internship", "co-op", "fellowship"]
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,63 +55,95 @@ def load_crawler_status() -> Dict[str, Any]:
     return {}
 
 
+def load_audit_report() -> Dict[str, Any]:
+    try:
+        audit_path = os.path.join(os.path.dirname(__file__), "data_quality_audit.json")
+        if os.path.exists(audit_path):
+            with open(audit_path, "r") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading data quality audit report: {e}")
+    return {}
+
+
 @router.get("/health")
 def health_check():
     return {"status": "ok", "message": "Internship Aggregator API is running"}
 
 
+@router.get("/data-quality/audit", response_model=Dict[str, Any])
+def get_data_quality_audit():
+    return load_audit_report()
+
+
 @router.get("/stats", response_model=Dict[str, Any])
 def get_stats(session: Session = Depends(get_session)):
-    active_filter = Internship.status == "active"
+    # Requirement 3: Only verified active internship/co-op/fellowship records enter default stats
+    base_cond = (Internship.status == "active") & (Internship.job_type.in_(DEFAULT_INTERNSHIP_TYPES))
 
-    total = session.exec(select(func.count(Internship.id)).where(active_filter)).one()
-    latest_verified = session.exec(select(func.max(Internship.last_verified_at)).where(active_filter)).one()
-    latest_posted = session.exec(select(func.max(Internship.posted_date)).where(active_filter)).one()
-    latest_date = latest_verified or latest_posted
+    total = session.exec(select(func.count(Internship.id)).where(base_cond)).one()
+    latest_verified = session.exec(select(func.max(Internship.last_verified_at)).where(base_cond)).one()
+    latest_first_seen = session.exec(select(func.max(Internship.first_seen_at)).where(base_cond)).one()
+    latest_date = latest_verified or latest_first_seen
 
     companies_count = session.exec(
-        select(func.count(func.distinct(Internship.company))).where(active_filter)
+        select(func.count(func.distinct(Internship.company))).where(base_cond)
     ).one()
-    international_friendly = session.exec(
-        select(func.count(Internship.id)).where(active_filter, Internship.international_score >= 7)
+
+    ai_ml_count = session.exec(
+        select(func.count(Internship.id)).where(base_cond, Internship.role_category == "ai_ml")
     ).one()
-    ai_count = session.exec(
-        select(func.count(Internship.id)).where(active_filter, Internship.ai_label == True)
+    swe_count = session.exec(
+        select(func.count(Internship.id)).where(base_cond, Internship.role_category == "software_engineering")
     ).one()
+
     official_and_ats_count = session.exec(
         select(func.count(Internship.id)).where(
-            active_filter,
+            base_cond,
             Internship.source_type.in_(["official_api", "public_ats", "official_portal"]),
         )
     ).one()
+
     verified_salary_count = session.exec(
         select(func.count(Internship.id)).where(
-            active_filter,
-            Internship.salary.is_not(None),
-            Internship.salary != "",
+            base_cond,
+            Internship.salary_min.is_not(None),
         )
     ).one()
+
+    visa_supported_count = session.exec(
+        select(func.count(Internship.id)).where(
+            base_cond,
+            Internship.visa_status == "sponsorship_explicitly_supported",
+        )
+    ).one()
+    visa_restricted_count = session.exec(
+        select(func.count(Internship.id)).where(
+            base_cond,
+            Internship.visa_status == "explicitly_restricted",
+        )
+    ).one()
+
     closed_or_expired_count = session.exec(
         select(func.count(Internship.id)).where(Internship.status != "active")
     ).one()
 
-    try:
-        active_alerts_count = session.exec(
-            select(func.count(CrawlerAlert.id)).where(CrawlerAlert.resolved == False)
-        ).one()
-    except Exception:
-        active_alerts_count = 0
+    audit_report = load_audit_report()
 
     return {
         "total_internships": total,
         "latest_update": latest_date.isoformat() if latest_date else datetime.utcnow().isoformat(),
         "companies_count": companies_count,
-        "international_friendly_count": international_friendly,
-        "ai_roles_count": ai_count,
+        "ai_roles_count": ai_ml_count,
+        "swe_roles_count": swe_count,
         "official_and_ats_count": official_and_ats_count,
         "verified_salary_count": verified_salary_count,
+        "visa_supported_count": visa_supported_count,
+        "visa_restricted_count": visa_restricted_count,
         "closed_or_expired_count": closed_or_expired_count,
-        "active_alerts_count": active_alerts_count,
+        "audit_passed": bool(audit_report.get("passed_all_targets", False)),
+        "audit_sample_size": audit_report.get("sample_size", 0),
+        "audit_metrics": audit_report.get("metrics", {}),
     }
 
 
@@ -132,6 +166,7 @@ def get_crawler_health(session: Session = Depends(get_session)):
         tier_counts[tier] = session.exec(
             select(func.count(Internship.id)).where(
                 Internship.status == "active",
+                Internship.job_type.in_(DEFAULT_INTERNSHIP_TYPES),
                 Internship.source_type == tier,
             )
         ).one()
@@ -192,8 +227,11 @@ def subscribe(body: SubscribeRequest, session: Session = Depends(get_session)):
 
     latest_20 = session.exec(
         select(Internship)
-        .where(Internship.status == "active")
-        .order_by(Internship.posted_date.desc())
+        .where(
+            Internship.status == "active",
+            Internship.job_type.in_(DEFAULT_INTERNSHIP_TYPES),
+        )
+        .order_by(Internship.first_seen_at.desc())
         .limit(20)
     ).all()
     sent = send_digest_email(email, latest_20)
@@ -211,8 +249,11 @@ def subscribe(body: SubscribeRequest, session: Session = Depends(get_session)):
 def preview_newsletter(session: Session = Depends(get_session)):
     latest_20 = session.exec(
         select(Internship)
-        .where(Internship.status == "active")
-        .order_by(Internship.posted_date.desc())
+        .where(
+            Internship.status == "active",
+            Internship.job_type.in_(DEFAULT_INTERNSHIP_TYPES),
+        )
+        .order_by(Internship.first_seen_at.desc())
         .limit(20)
     ).all()
     return HTMLResponse(content=generate_digest_html(latest_20))
@@ -232,6 +273,9 @@ def read_internships(
     source: Optional[str] = None,
     source_type: Optional[str] = None,
     status: Optional[str] = "active",
+    job_type: Optional[str] = None,
+    role_category: Optional[str] = None,
+    visa_status: Optional[str] = None,
     location: Optional[str] = None,
     min_score: Optional[int] = None,
     ai_only: Optional[bool] = None,
@@ -241,8 +285,18 @@ def read_internships(
 ):
     query = select(Internship)
 
+    # Requirement 1 & 7: Only active postings by default
     if status and status != "all":
         query = query.where(Internship.status == status)
+
+    # Requirement 3: Only verified internship / co-op / fellowship types enter default list
+    if job_type:
+        if job_type == "all_student":
+            query = query.where(Internship.job_type != "non_student")
+        else:
+            query = query.where(Internship.job_type == job_type)
+    else:
+        query = query.where(Internship.job_type.in_(DEFAULT_INTERNSHIP_TYPES))
 
     if source:
         query = query.where(Internship.source == source)
@@ -255,17 +309,29 @@ def read_internships(
         else:
             query = query.where(Internship.source_type == source_type)
 
+    # Requirement 6: Explicit role_category filter
+    if role_category:
+        query = query.where(Internship.role_category == role_category)
+    elif ai_only:
+        query = query.where(Internship.role_category == "ai_ml")
+
+    # Requirement 4: Auditable visa_status filter
+    if visa_status:
+        if visa_status == "not_restricted":
+            query = query.where(Internship.visa_status != "explicitly_restricted")
+        else:
+            query = query.where(Internship.visa_status == visa_status)
+    elif min_score is not None:
+        if min_score >= 8:
+            query = query.where(Internship.visa_status == "sponsorship_explicitly_supported")
+        else:
+            query = query.where(Internship.visa_status != "explicitly_restricted")
+
     if location:
         if location.lower() == "remote":
             query = query.where(Internship.location.contains("Remote"))
         else:
             query = query.where(Internship.location.contains(location))
-
-    if min_score is not None:
-        query = query.where(Internship.international_score >= min_score)
-
-    if ai_only:
-        query = query.where(Internship.ai_label == True)
 
     if company_type:
         if company_type == "big_tech":
@@ -278,11 +344,7 @@ def read_internships(
             ]
             query = query.where((Internship.company.in_(finance)) | (Internship.industry == "Finance"))
         elif company_type == "ai_ml":
-            query = query.where(
-                (Internship.ai_label == True)
-                | (Internship.role.contains("AI"))
-                | (Internship.role.contains("Machine Learning"))
-            )
+            query = query.where(Internship.role_category == "ai_ml")
         elif company_type == "defense_aerospace":
             defense = [
                 "NASA", "SpaceX", "General Dynamics", "General Dynamics Mission Systems",
@@ -290,22 +352,15 @@ def read_internships(
             ]
             query = query.where((Internship.company.in_(defense)) | (Internship.industry == "Aerospace"))
 
+    # Requirement 5: Structured compensation filter
     if high_salary:
         query = query.where(
-            Internship.salary.is_not(None),
-            Internship.salary != "",
-            (Internship.salary.contains("$4"))
-            | (Internship.salary.contains("$5"))
-            | (Internship.salary.contains("$6"))
-            | (Internship.salary.contains("$7"))
-            | (Internship.salary.contains("$8"))
-            | (Internship.salary.contains("$9"))
-            | (Internship.salary.contains("$10"))
-            | (Internship.salary.contains("$11"))
-            | (Internship.salary.contains("$12"))
-            | (Internship.salary.contains("$13"))
-            | (Internship.salary.contains("$14"))
-            | (Internship.salary.contains("$15")),
+            Internship.salary_min.is_not(None),
+            (
+                ((Internship.salary_period == "hour") & (Internship.salary_max >= 35))
+                | ((Internship.salary_period == "month") & (Internship.salary_max >= 6000))
+                | ((Internship.salary_period == "year") & (Internship.salary_max >= 75000))
+            ),
         )
 
     if search:
@@ -320,7 +375,7 @@ def read_internships(
     total = session.exec(count_query).one()
 
     if sort_by_date:
-        query = query.order_by(Internship.posted_date.desc())
+        query = query.order_by(Internship.first_seen_at.desc(), Internship.id.desc())
 
     query = query.offset(offset).limit(limit)
     internships = session.exec(query).all()
