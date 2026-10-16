@@ -1,24 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Clock, Globe, Briefcase, Zap, Building2, Flame } from 'lucide-react';
+import { Clock, Globe, Zap, Building2 } from 'lucide-react';
 
-// Continuous looping animated counter with a 1-second pause at the end of each cycle
-function useAnimatedLoopingCounter(endValue, duration = 1400, pauseMs = 1000) {
+const MAX_SIX_DIGIT_VALUE = 999999;
+
+// Continuous looping animated counter with slowed-down step cadence and 2-second pause
+function useAnimatedLoopingCounter(endValue, duration = 3600, pauseMs = 2000, stepIntervalMs = 85) {
+  const clampSixDigits = (val) => {
+    const num = Number(val);
+    if (isNaN(num) || num < 0) return 0;
+    return Math.min(MAX_SIX_DIGIT_VALUE, Math.round(num));
+  };
+
   const isStatic = typeof window !== 'undefined' && (
     window.location.search.includes('static') ||
     window.location.search.includes('screenshot')
   );
-  const [count, setCount] = useState(() => isStatic ? (endValue ?? 0) : 0);
+  const [count, setCount] = useState(() => isStatic ? clampSixDigits(endValue ?? 0) : 0);
 
   useEffect(() => {
+    const target = clampSixDigits(endValue ?? 0);
     if (isStatic) {
-      setCount(endValue ?? 0);
+      setCount(target);
       return;
     }
-    if (!endValue && endValue !== 0) return;
-    const target = Number(endValue);
-    if (isNaN(target)) return;
+    if (!target) {
+      setCount(0);
+      return;
+    }
 
     let startTime = null;
+    let lastUpdate = 0;
     let animationFrameId;
     const totalCycle = duration + pauseMs;
 
@@ -28,13 +39,17 @@ function useAnimatedLoopingCounter(endValue, duration = 1400, pauseMs = 1000) {
       const elapsedInCycle = elapsed % totalCycle;
 
       if (elapsedInCycle < duration) {
-        const progress = elapsedInCycle / duration;
-        // Smooth easeOutCubic curve from 0 to 1
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        setCount(Math.round(easeProgress * target));
+        // Throttle state updates so digits step calmly instead of flickering at 60fps
+        if (timestamp - lastUpdate >= stepIntervalMs) {
+          const progress = elapsedInCycle / duration;
+          // Gentle easeOut curve (power 1.5) for a steady, unhurried count-up
+          const easeProgress = 1 - Math.pow(1 - progress, 1.5);
+          setCount(Math.min(target, Math.round(easeProgress * target)));
+          lastUpdate = timestamp;
+        }
       } else {
-        // Hold firmly at target number for pauseMs (1 second)
-        setCount(target);
+        // Hold firmly at target number for pauseMs (2 seconds)
+        setCount((prev) => (prev !== target ? target : prev));
       }
 
       animationFrameId = requestAnimationFrame(animate);
@@ -42,12 +57,12 @@ function useAnimatedLoopingCounter(endValue, duration = 1400, pauseMs = 1000) {
 
     animationFrameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [endValue, duration, pauseMs]);
+  }, [endValue, duration, pauseMs, stepIntervalMs, isStatic]);
 
   return count;
 }
 
-const LiveStatsBanner = ({ stats, loading }) => {
+const LiveStatsBanner = ({ stats }) => {
   const formatTime = (isoString) => {
     if (!isoString) return 'Just now';
     try {
@@ -64,19 +79,19 @@ const LiveStatsBanner = ({ stats, loading }) => {
     }
   };
 
-  const rawTotal = stats?.total_internships ?? 2085;
-  const rawVisa = stats?.international_friendly_count ?? 1818;
-  const rawAi = stats?.ai_roles_count ?? 259;
-  const rawCompanies = stats?.companies_count ?? 630;
+  const rawTotal = Math.min(MAX_SIX_DIGIT_VALUE, stats?.total_internships ?? 2085);
+  const rawVisa = Math.min(MAX_SIX_DIGIT_VALUE, stats?.international_friendly_count ?? 1818);
+  const rawAi = Math.min(MAX_SIX_DIGIT_VALUE, stats?.ai_roles_count ?? 259);
+  const rawCompanies = Math.min(MAX_SIX_DIGIT_VALUE, stats?.companies_count ?? 630);
   const officialCount = stats?.official_and_ats_count ?? 392;
   const closedCount = stats?.closed_or_expired_count ?? 692;
   const updateTime = stats?.latest_update ? formatTime(stats.latest_update) : 'Just now';
 
-  // Synchronized continuous looping animated counters with 1s pause
-  const animatedTotal = useAnimatedLoopingCounter(rawTotal, 1400, 1000);
-  const animatedVisa = useAnimatedLoopingCounter(rawVisa, 1400, 1000);
-  const animatedAi = useAnimatedLoopingCounter(rawAi, 1400, 1000);
-  const animatedCompanies = useAnimatedLoopingCounter(rawCompanies, 1400, 1000);
+  // Synchronized continuous looping animated counters (3.6s smooth count-up + 2s pause)
+  const animatedTotal = useAnimatedLoopingCounter(rawTotal, 3600, 2000, 85);
+  const animatedVisa = useAnimatedLoopingCounter(rawVisa, 3600, 2000, 85);
+  const animatedAi = useAnimatedLoopingCounter(rawAi, 3600, 2000, 85);
+  const animatedCompanies = useAnimatedLoopingCounter(rawCompanies, 3600, 2000, 85);
 
   return (
     <div className="w-full max-w-5xl mx-auto mb-8">
@@ -103,7 +118,8 @@ const LiveStatsBanner = ({ stats, loading }) => {
                 </span>
               </div>
               <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex flex-wrap items-baseline gap-2">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 text-3xl sm:text-4xl font-extrabold tabular-nums transition-all">
+                {/* Fixed 6-digit display width (7ch including comma separator) */}
+                <span className="inline-block w-[7ch] text-right bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 text-3xl sm:text-4xl font-extrabold tabular-nums font-mono shrink-0">
                   {animatedTotal.toLocaleString()}
                 </span>
                 <span className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">
@@ -116,7 +132,7 @@ const LiveStatsBanner = ({ stats, loading }) => {
             </div>
           </div>
 
-          {/* Right: Key student metrics with continuous looping number animations */}
+          {/* Right: Key student metrics with fixed-width 6-digit number slots */}
           <div className="grid grid-cols-3 gap-2.5 sm:gap-3 w-full lg:w-auto">
             {/* Visa F-1 */}
             <div className="flex flex-col items-center sm:items-start bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-3 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
@@ -124,7 +140,7 @@ const LiveStatsBanner = ({ stats, loading }) => {
                 <Globe className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <span>F-1 / Sponsor</span>
               </div>
-              <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+              <div className="inline-block w-[8ch] text-center sm:text-left text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums font-mono whitespace-nowrap">
                 {animatedVisa.toLocaleString()}+
               </div>
               <span className="text-[10px] text-slate-400 font-medium">CPT/OPT Friendly</span>
@@ -136,7 +152,7 @@ const LiveStatsBanner = ({ stats, loading }) => {
                 <Zap className="w-3.5 h-3.5 text-violet-500 shrink-0" />
                 <span>AI & LLM</span>
               </div>
-              <div className="text-lg sm:text-xl font-black text-violet-600 dark:text-violet-400 tabular-nums">
+              <div className="inline-block w-[8ch] text-center sm:text-left text-lg sm:text-xl font-black text-violet-600 dark:text-violet-400 tabular-nums font-mono whitespace-nowrap">
                 {animatedAi.toLocaleString()}+
               </div>
               <span className="text-[10px] text-slate-400 font-medium">GenAI / ML Grind</span>
@@ -148,7 +164,7 @@ const LiveStatsBanner = ({ stats, loading }) => {
                 <Building2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 <span>Companies</span>
               </div>
-              <div className="text-lg sm:text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums">
+              <div className="inline-block w-[8ch] text-center sm:text-left text-lg sm:text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums font-mono whitespace-nowrap">
                 {animatedCompanies.toLocaleString()}+
               </div>
               <span className="text-[10px] text-slate-400 font-medium">FAANG & Unicorns</span>
