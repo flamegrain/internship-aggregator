@@ -100,74 +100,74 @@ const LiveStatsBanner = ({ stats }) => {
         <div className="absolute -top-14 -right-14 w-56 h-56 bg-blue-500/15 dark:bg-blue-400/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-14 -left-14 w-56 h-56 bg-violet-500/15 dark:bg-violet-400/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           {/* Left: Dynamic Live Counter */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
             <div className="relative flex h-4 w-4 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2.5 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2.5 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800 whitespace-nowrap">
                   LIVE RADAR ACTIVE
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
+                <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 whitespace-nowrap">
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
                   Verified: <span className="font-semibold text-slate-700 dark:text-slate-300">{updateTime}</span>
                 </span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex flex-wrap items-baseline gap-2">
+              <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-baseline gap-2 whitespace-nowrap">
                 {/* Fixed 6-digit display width (7ch including comma separator) */}
-                <span className="inline-block w-[7ch] text-right bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 text-3xl sm:text-4xl font-extrabold tabular-nums font-mono shrink-0">
+                <span className="inline-block w-[6.5ch] text-left bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 text-3xl sm:text-4xl font-extrabold tabular-nums font-mono shrink-0">
                   {animatedTotal.toLocaleString()}
                 </span>
                 <span className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">
                   Verified Active Roles
                 </span>
-                <span className="hidden sm:inline-block text-xs font-semibold text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-200/60 dark:border-blue-800/60">
-                  {officialCount} Direct API/ATS • {closedCount} Closed Filtered
+                <span className="hidden sm:inline-block text-xs font-semibold text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-800/60">
+                  Zero Cap
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Right: Key student metrics with fixed-width 6-digit number slots */}
-          <div className="grid grid-cols-3 gap-2.5 sm:gap-3 w-full lg:w-auto">
+          {/* Right: Key student metrics with fixed-width 6-digit number slots and no-wrap labels */}
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3 w-full lg:w-auto shrink-0">
             {/* Visa F-1 */}
-            <div className="flex flex-col items-center sm:items-start bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-3 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
+            <div className="flex flex-col items-center sm:items-start bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl px-3.5 py-3 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1 whitespace-nowrap">
                 <Globe className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>F-1 / Sponsor</span>
+                <span>F-1 Visa</span>
               </div>
-              <div className="inline-block w-[8ch] text-center sm:text-left text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums font-mono whitespace-nowrap">
+              <div className="inline-block w-[7.5ch] text-center sm:text-left text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums font-mono whitespace-nowrap">
                 {animatedVisa.toLocaleString()}+
               </div>
-              <span className="text-[10px] text-slate-400 font-medium">CPT/OPT Friendly</span>
+              <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">CPT/OPT Friendly</span>
             </div>
 
             {/* AI / ML Roles */}
-            <div className="flex flex-col items-center sm:items-start bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-3 shadow-xs hover:border-violet-300 dark:hover:border-violet-700 transition-colors">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
+            <div className="flex flex-col items-center sm:items-start bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl px-3.5 py-3 shadow-xs hover:border-violet-300 dark:hover:border-violet-700 transition-colors">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1 whitespace-nowrap">
                 <Zap className="w-3.5 h-3.5 text-violet-500 shrink-0" />
                 <span>AI & LLM</span>
               </div>
-              <div className="inline-block w-[8ch] text-center sm:text-left text-lg sm:text-xl font-black text-violet-600 dark:text-violet-400 tabular-nums font-mono whitespace-nowrap">
+              <div className="inline-block w-[7.5ch] text-center sm:text-left text-lg sm:text-xl font-black text-violet-600 dark:text-violet-400 tabular-nums font-mono whitespace-nowrap">
                 {animatedAi.toLocaleString()}+
               </div>
-              <span className="text-[10px] text-slate-400 font-medium">GenAI / ML Grind</span>
+              <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">GenAI / ML Grind</span>
             </div>
 
             {/* Companies */}
-            <div className="flex flex-col items-center sm:items-start bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-3 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
+            <div className="flex flex-col items-center sm:items-start bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl px-3.5 py-3 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1 whitespace-nowrap">
                 <Building2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 <span>Companies</span>
               </div>
-              <div className="inline-block w-[8ch] text-center sm:text-left text-lg sm:text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums font-mono whitespace-nowrap">
+              <div className="inline-block w-[7.5ch] text-center sm:text-left text-lg sm:text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums font-mono whitespace-nowrap">
                 {animatedCompanies.toLocaleString()}+
               </div>
-              <span className="text-[10px] text-slate-400 font-medium">FAANG & Unicorns</span>
+              <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">FAANG & Unicorns</span>
             </div>
           </div>
         </div>
