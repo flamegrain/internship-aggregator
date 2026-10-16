@@ -18,7 +18,7 @@ const SOURCE_TIER_BADGES = {
         Icon: ShieldCheck,
     },
     community_verified: {
-        label: 'Community Verified',
+        label: 'Verified',
         className: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700/70 dark:text-slate-300 dark:border-slate-600',
         Icon: CheckCircle2,
     },
@@ -28,14 +28,13 @@ const ROLE_CATEGORY_BADGES = {
     ai_ml: {
         label: 'AI / ML',
         className: 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-transparent',
-        isGradient: true,
     },
     software_engineering: {
-        label: 'Software Eng',
+        label: 'SWE',
         className: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
     },
     data_analytics: {
-        label: 'Data & Analytics',
+        label: 'Data',
         className: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800',
     },
     research: {
@@ -43,7 +42,7 @@ const ROLE_CATEGORY_BADGES = {
         className: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
     },
     other: {
-        label: 'Quant / PM / HW',
+        label: 'Quant / PM',
         className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
     },
 };
@@ -58,23 +57,27 @@ const JOB_TYPE_LABELS = {
 
 const VISA_STATUS_BADGES = {
     sponsorship_explicitly_supported: {
-        label: 'Sponsor Verified',
+        label: 'Sponsor OK',
+        fullLabel: 'Sponsorship Explicitly Supported',
         className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
         defaultNote: 'Current posting explicitly supports visa sponsorship or F-1/CPT/OPT work authorization.',
     },
     explicitly_restricted: {
-        label: 'Restricted / No Sponsor',
+        label: 'No Sponsor / U.S. Citizen',
+        fullLabel: 'Explicitly Restricted',
         className: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800',
         defaultNote: 'Posting explicitly requires U.S. citizenship/clearance or states no visa sponsorship.',
     },
     needs_review: {
-        label: 'Visa Needs Review',
+        label: 'Visa Review',
+        fullLabel: 'Needs Review',
         className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
         defaultNote: 'Posting contains conditional or conflicting work authorization statements.',
     },
     not_specified: {
-        label: 'Visa Not Specified',
-        className: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700/60 dark:text-slate-300 dark:border-slate-600',
+        label: 'Visa Unstated',
+        fullLabel: 'Not Specified in JD',
+        className: 'bg-slate-100/90 text-slate-500 border-slate-200/80 dark:bg-slate-700/50 dark:text-slate-400 dark:border-slate-600/70',
         defaultNote: 'No explicit visa sponsorship or citizenship restriction stated in this posting.',
     },
 };
@@ -134,109 +137,103 @@ const InternshipCard = ({ internship }) => {
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 border border-slate-200/80 dark:border-slate-700/80 group h-full flex flex-col relative hover:border-blue-300 dark:hover:border-slate-600">
             <div className="p-5 flex-1 flex flex-col">
-                {/* Header Row: Logo, Role, Auditable Visa Status & Role Category */}
-                <div className="flex justify-between items-start mb-3 gap-3">
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                        {internship.logo_url ? (
-                            <div className="w-11 h-11 rounded-xl bg-white border border-slate-200/90 dark:border-slate-600 p-1.5 flex items-center justify-center shrink-0 shadow-xs">
-                                <img
-                                    src={internship.logo_url}
-                                    alt={`${internship.company} logo`}
-                                    className="w-full h-full object-contain"
-                                    onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(internship.company) + "&background=6366f1&color=fff";
-                                    }}
-                                />
-                            </div>
-                        ) : (
-                            <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-slate-700 border border-blue-100 dark:border-slate-600 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                                <Building className="w-5 h-5" />
-                            </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                            <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
-                                <a
-                                    href={internship.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                                >
-                                    {internship.role}
-                                </a>
-                            </h3>
-                            <div className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                                <span>{internship.company}</span>
-                                <span className="text-slate-300 dark:text-slate-600">•</span>
-                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                    {jobTypeLabel}
-                                </span>
-                            </div>
+                {/* Header Row: Full-width for Logo + Job Title + Company so long role titles never get squeezed */}
+                <div className="flex items-start gap-3 mb-3">
+                    {internship.logo_url ? (
+                        <div className="w-11 h-11 rounded-xl bg-white border border-slate-200/90 dark:border-slate-600 p-1.5 flex items-center justify-center shrink-0 shadow-xs">
+                            <img
+                                src={internship.logo_url}
+                                alt={`${internship.company} logo`}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(internship.company) + "&background=6366f1&color=fff";
+                                }}
+                            />
                         </div>
-                    </div>
-
-                    {/* Top-Right Auditable Badges: Visa Classification & Explicit Role Category */}
-                    <div className="flex flex-col items-end gap-1.5 shrink-0 pt-0.5">
-                        {/* Auditable Visa Status Badge with Verbatim Evidence Tooltip */}
-                        <div className="relative group/tooltip">
-                            <span className={`cursor-help text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border shadow-xs whitespace-nowrap ${visaBadge.className}`}>
-                                {visaStatusKey === 'needs_review' ? (
-                                    <AlertTriangle className="w-3 h-3 shrink-0" />
-                                ) : (
-                                    <Globe className="w-3 h-3 shrink-0" />
-                                )}
-                                <span>{visaBadge.label}</span>
-                            </span>
-                            <div className="absolute bottom-full right-0 mb-2 w-64 p-2.5 bg-slate-900 dark:bg-slate-950 text-white text-xs rounded-xl opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-30 text-left shadow-xl border border-slate-700 leading-relaxed">
-                                <div className="font-bold text-slate-200 mb-0.5">
-                                    Work Authorization Status: {visaBadge.label}
-                                </div>
-                                <div className="text-slate-300 text-[11px]">
-                                    {internship.visa_evidence
-                                        ? `Evidence: "${internship.visa_evidence}"`
-                                        : visaBadge.defaultNote}
-                                </div>
-                            </div>
+                    ) : (
+                        <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-slate-700 border border-blue-100 dark:border-slate-600 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                            <Building className="w-5 h-5" />
                         </div>
+                    )}
 
-                        {/* Role Category Badge */}
-                        {roleCatBadge && (
-                            <span
-                                className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border shadow-xs whitespace-nowrap ${roleCatBadge.className}`}
-                                title={internship.category_evidence || `Classified as ${roleCatBadge.label}`}
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-[15px] sm:text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
+                            <a
+                                href={internship.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                             >
-                                {roleCatKey === 'ai_ml' && <Zap className="w-3 h-3 fill-current shrink-0" />}
-                                <span>{roleCatBadge.label}</span>
+                                {internship.role}
+                            </a>
+                        </h3>
+                        <div className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                            <span className="text-slate-700 dark:text-slate-300">{internship.company}</span>
+                            <span className="text-slate-300 dark:text-slate-600">•</span>
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                {jobTypeLabel}
                             </span>
-                        )}
+                            {roleCatBadge && (
+                                <span
+                                    className={`ml-auto text-[11px] px-2 py-0.5 rounded-full font-bold inline-flex items-center gap-1 border shadow-2xs whitespace-nowrap ${roleCatBadge.className}`}
+                                    title={internship.category_evidence || `Classified as ${roleCatBadge.label}`}
+                                >
+                                    {roleCatKey === 'ai_ml' && <Zap className="w-2.5 h-2.5 fill-current shrink-0" />}
+                                    <span>{roleCatBadge.label}</span>
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Metadata Pills: Location, Provenance, Structured Compensation, Required & Preferred Skills */}
-                <div className="flex flex-wrap gap-1.5 text-xs text-slate-600 dark:text-slate-300 my-2.5">
-                    <div className="flex items-center gap-1.5 bg-slate-100/90 dark:bg-slate-700/60 px-2.5 py-1 rounded-lg">
+                {/* Metadata Pills: Location, Provenance, Compact Visa Status, Compensation & Skills */}
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 my-2">
+                    <div className="flex items-center gap-1 bg-slate-100/90 dark:bg-slate-700/60 px-2.5 py-1 rounded-lg max-w-full">
                         <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="font-medium">{internship.location}</span>
+                        <span className="font-medium truncate">{internship.location}</span>
                     </div>
 
                     {/* Provenance Tier Badge */}
                     <div
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border font-semibold ${tierBadge.className}`}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg border font-semibold whitespace-nowrap ${tierBadge.className}`}
                         title={`Primary Source: ${internship.source || 'verified'}${sourcesCount > 1 ? ` • Cross-verified across ${sourcesCount} sources` : ''}`}
                     >
-                        <TierIcon className="w-3.5 h-3.5 shrink-0" />
+                        <TierIcon className="w-3 h-3 shrink-0" />
                         <span>{tierBadge.label}</span>
                         {sourcesCount > 1 && (
-                            <span className="ml-0.5 px-1.5 py-0.2 bg-white/80 dark:bg-slate-900/60 rounded text-[10px] font-bold">
+                            <span className="ml-0.5 px-1 bg-white/80 dark:bg-slate-900/60 rounded text-[10px] font-bold">
                                 +{sourcesCount - 1}
                             </span>
                         )}
                     </div>
 
+                    {/* Compact Auditable Visa Status Pill with Verbatim Evidence Tooltip */}
+                    <div className="relative group/tooltip">
+                        <span className={`cursor-help text-[11px] px-2 py-1 rounded-lg font-semibold inline-flex items-center gap-1 border whitespace-nowrap ${visaBadge.className}`}>
+                            {visaStatusKey === 'needs_review' ? (
+                                <AlertTriangle className="w-3 h-3 shrink-0" />
+                            ) : (
+                                <Globe className="w-3 h-3 shrink-0" />
+                            )}
+                            <span>{visaBadge.label}</span>
+                        </span>
+                        <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-900 dark:bg-slate-950 text-white text-xs rounded-xl opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-30 text-left shadow-xl border border-slate-700 leading-relaxed">
+                            <div className="font-bold text-slate-200 mb-0.5">
+                                Work Auth: {visaBadge.fullLabel}
+                            </div>
+                            <div className="text-slate-300 text-[11px]">
+                                {internship.visa_evidence
+                                    ? `Evidence: "${internship.visa_evidence}"`
+                                    : visaBadge.defaultNote}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Disclosed Structured Salary Pill with Verbatim Quote Tooltip */}
                     {internship.salary && (
                         <div
-                            className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/80 px-2.5 py-1 rounded-lg text-emerald-700 dark:text-emerald-300 font-bold cursor-help"
+                            className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/80 px-2.5 py-1 rounded-lg text-emerald-700 dark:text-emerald-300 font-bold cursor-help whitespace-nowrap"
                             title={
                                 evidenceObj?.salary_quote
                                     ? `Verbatim JD Salary Quote: "${evidenceObj.salary_quote}"`
@@ -251,7 +248,7 @@ const InternshipCard = ({ internship }) => {
                     {/* Required Skills Pill */}
                     {requiredSkills && (
                         <div
-                            className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-700/50 border border-slate-200/70 dark:border-slate-600/60 px-2.5 py-1 rounded-lg text-slate-700 dark:text-slate-200 font-medium cursor-help"
+                            className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-700/50 border border-slate-200/70 dark:border-slate-600/60 px-2.5 py-1 rounded-lg text-slate-700 dark:text-slate-200 font-medium cursor-help max-w-full"
                             title={
                                 evidenceObj?.required_skills_quote
                                     ? `Required Skills Evidence: "${evidenceObj.required_skills_quote}"`
@@ -259,14 +256,14 @@ const InternshipCard = ({ internship }) => {
                             }
                         >
                             <Code2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                            <span className="truncate max-w-[200px]">Req: {requiredSkills}</span>
+                            <span className="truncate max-w-[210px]">Req: {requiredSkills}</span>
                         </div>
                     )}
 
                     {/* Preferred Skills Pill */}
                     {preferredSkills && (
                         <div
-                            className="flex items-center gap-1 bg-violet-50/70 dark:bg-violet-950/40 border border-violet-200/60 dark:border-violet-800/60 px-2.5 py-1 rounded-lg text-violet-700 dark:text-violet-300 font-medium cursor-help"
+                            className="flex items-center gap-1 bg-violet-50/70 dark:bg-violet-950/40 border border-violet-200/60 dark:border-violet-800/60 px-2.5 py-1 rounded-lg text-violet-700 dark:text-violet-300 font-medium cursor-help max-w-full"
                             title={
                                 evidenceObj?.preferred_skills_quote
                                     ? `Preferred Skills Evidence: "${evidenceObj.preferred_skills_quote}"`
@@ -274,13 +271,13 @@ const InternshipCard = ({ internship }) => {
                             }
                         >
                             <Sparkles className="w-3 h-3 text-violet-500 shrink-0" />
-                            <span className="truncate max-w-[180px]">Pref: {preferredSkills}</span>
+                            <span className="truncate max-w-[190px]">Pref: {preferredSkills}</span>
                         </div>
                     )}
                 </div>
 
                 {/* Separated Timestamps Row: Employer Posted Date (when authentic), First Seen & Last Verified */}
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 dark:text-slate-500 mt-1 mb-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 mb-2.5">
                     <div className="flex items-center gap-2.5 flex-wrap">
                         {postedAtDate && (
                             <span
