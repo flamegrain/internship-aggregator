@@ -9,7 +9,7 @@
 
 [English] | [简体中文](./README.zh-CN.md) | 🌐 **Live Demo**: [internship-aggregator-nu.vercel.app](https://internship-aggregator-nu.vercel.app/)
 
-An **auditable, evidence-backed full-stack internship aggregation platform** built for college students seeking Tech, AI/ML, Quant, and Research internships. Tracks **1,861 verified active internships** across **600+ companies** through Official Career APIs, Public ATS feeds (Greenhouse & Lever), Official Career Portals, and cross-verified community repositories—with **zero simulated listings, zero placeholder compensation, and 100% verbatim evidence traceability**.
+An **auditable, evidence-backed full-stack internship aggregation platform** built for college students seeking Tech, AI/ML, Quant, and Research internships. Tracks **2,396 verified active internships** across **650+ companies** through Official Career APIs, Public ATS feeds (Greenhouse & Lever), Official Career Portals, and cross-verified community repositories—with **zero simulated listings, zero placeholder compensation, and 100% verbatim evidence traceability**.
 
 ![Dashboard Preview](assets/homepage_preview_v2.png)
 

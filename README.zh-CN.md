@@ -9,7 +9,7 @@
 
 [English](./README.md) | [简体中文] | 🌐 **在线演示**: [internship-aggregator-nu.vercel.app](https://internship-aggregator-nu.vercel.app/)
 
-一个面向北美高校学生的**可审计、证据驱动型全栈实习信息聚合平台**。深度整合企业官方招聘 API、公开 ATS 接口（Greenhouse & Lever）、官方招聘门户与社区核验数据源，实时追踪 **600+ 家企业**的 **1,861 条真实有效实习岗位**——**零模拟数据、零占位薪酬、零虚构技能要求，所有薪资、技能与签证判断均保存雇主原文证据链**。
+一个面向北美高校学生的**可审计、证据驱动型全栈实习信息聚合平台**。深度整合企业官方招聘 API、公开 ATS 接口（Greenhouse & Lever）、官方招聘门户与社区核验数据源，实时追踪 **650+ 家企业**的 **2,396 条真实有效实习岗位**——**零模拟数据、零占位薪酬、零虚构技能要求，所有薪资、技能与签证判断均保存雇主原文证据链**。
 
 ![Dashboard Preview](assets/homepage_preview_v2.png)
 
