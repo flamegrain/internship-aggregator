@@ -17,7 +17,7 @@ import requests
 from bs4 import BeautifulSoup
 
 import data_quality as dq
-from crawlers.ats import crawl_greenhouse, crawl_lever
+from crawlers.ats import crawl_greenhouse, crawl_lever, crawl_workday, crawl_smartrecruiters
 from crawlers.microsoft import crawl_microsoft
 from crawlers.morgan_stanley import crawl_morgan_stanley
 
@@ -488,7 +488,7 @@ def main():
 
         if simplify_only and src_type != "github_readme":
             continue
-        if src_type not in ("greenhouse_ats", "lever_ats", "microsoft_official", "morgan_stanley_official", "github_readme"):
+        if src_type not in ("greenhouse_ats", "lever_ats", "workday_ats", "smartrecruiters_ats", "microsoft_official", "morgan_stanley_official", "github_readme"):
             continue
 
         logging.info(f"Syncing [{src_tier}] {src_name} ({src_id})...")
@@ -500,6 +500,12 @@ def main():
                     upsert_sqlite_row(cur, item, src_id, src_tier)
             elif src_type == "lever_ats":
                 for item in crawl_lever(src):
+                    upsert_sqlite_row(cur, item, src_id, src_tier)
+            elif src_type == "workday_ats":
+                for item in crawl_workday(src):
+                    upsert_sqlite_row(cur, item, src_id, src_tier)
+            elif src_type == "smartrecruiters_ats":
+                for item in crawl_smartrecruiters(src):
                     upsert_sqlite_row(cur, item, src_id, src_tier)
             elif src_type == "microsoft_official":
                 for item in crawl_microsoft(src):

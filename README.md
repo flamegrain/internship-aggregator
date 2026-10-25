@@ -9,7 +9,7 @@
 
 [English] | [简体中文](./README.zh-CN.md) | 🌐 **Live Demo**: [internship-aggregator-nu.vercel.app](https://internship-aggregator-nu.vercel.app/)
 
-An **auditable, evidence-backed full-stack internship aggregation platform** built for college students seeking Tech, AI/ML, Quant, and Research internships. Tracks **2,396 verified active internships** across **650+ companies** through Official Career APIs, Public ATS feeds (Greenhouse & Lever), Official Career Portals, and cross-verified community repositories—with **zero simulated listings, zero placeholder compensation, and 100% verbatim evidence traceability**.
+An **auditable, evidence-backed full-stack internship aggregation platform** built for college students seeking Tech, AI/ML, Quant, and Research internships. Tracks **2,542 verified active internships** across **654 companies** through Official Career APIs, Public ATS feeds (Workday, SmartRecruiters, Greenhouse & Lever), Official Career Portals, and cross-verified community repositories—with **zero simulated listings, zero placeholder compensation, and 100% verbatim evidence traceability**.
 
 ![Dashboard Preview](assets/homepage_preview_v2.png)
 
@@ -79,7 +79,7 @@ We prioritize official first-party APIs and public ATS feeds, enriched by cross-
 | Priority Tier | Source Type | Channels & Employers | Provenance Capabilities |
 | :---: | :--- | :--- | :--- |
 | **Tier 1 (`100`)** | `official_api` | **Microsoft Careers API**, **Morgan Stanley Talbot API** | Authentic `posted_at`, direct requisition IDs, authoritative open/close lifecycle |
-| **Tier 2 (`90`)** | `public_ats` | **Greenhouse & Lever Public ATS APIs** (Stripe, Databricks, Anthropic, Cloudflare, Figma, Scale AI, SpaceX, Coinbase, Robinhood, Pinterest, Lyft, Reddit, Asana, Instacart, Vercel, Plaid, Palantir, Zoox) | Full HTML JD parsing, verbatim `salary_quote` compensation ranges, `required_skills` vs `preferred_skills`, ITAR/citizenship & sponsorship evidence |
+| **Tier 2 (`90`)** | `public_ats` | **Workday Public CXS APIs** (NVIDIA, Adobe, Salesforce, Intel, Boeing, Capital One, Rockwell Automation), **SmartRecruiters Public APIs** (Western Digital, Bosch), and **Greenhouse & Lever Public ATS APIs** (Stripe, Databricks, Anthropic, Cloudflare, Figma, Scale AI, SpaceX, Coinbase, Robinhood, Pinterest, Lyft, Reddit, Asana, Instacart, Vercel, Plaid, Palantir, Zoox) | Full HTML JD parsing, verbatim `salary_quote` compensation ranges, `required_skills` vs `preferred_skills`, ITAR/citizenship & sponsorship evidence |
 | **Tier 3 (`80`)** | `official_portal` | **Apple**, **Meta**, **Google**, **Amazon**, **JPMorgan Chase**, **Goldman Sachs**, **NASA STEM** | Direct portal job detail URLs and official requisition tracking |
 | **Tier 4 (`60`)** | `community_verified` | **SimplifyJobs Summer 2026 Internships** | Broad coverage across 600+ employers, explicit `🛂` (No Sponsor), `🇺🇸` (U.S. Citizen Required), and `🔒` (Closed) flags |
 

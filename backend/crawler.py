@@ -44,9 +44,9 @@ CRAWLER_STATUS_FILE = os.path.join(os.path.dirname(__file__), "crawler_status.js
 
 # Import specialized crawlers
 try:
-    from crawlers.ats import crawl_greenhouse, crawl_lever
+    from crawlers.ats import crawl_greenhouse, crawl_lever, crawl_workday, crawl_smartrecruiters
 except ImportError:
-    from backend.crawlers.ats import crawl_greenhouse, crawl_lever
+    from backend.crawlers.ats import crawl_greenhouse, crawl_lever, crawl_workday, crawl_smartrecruiters
 
 try:
     from crawlers.nasa import crawl_nasa
@@ -575,6 +575,10 @@ def _run_collector_for_source(source: Dict[str, Any]) -> List[Dict[str, Any]]:
         return crawl_greenhouse(source)
     if source_type == "lever_ats":
         return crawl_lever(source)
+    if source_type == "workday_ats":
+        return crawl_workday(source)
+    if source_type == "smartrecruiters_ats":
+        return crawl_smartrecruiters(source)
     if source_type == "microsoft_official" and crawl_microsoft:
         return crawl_microsoft(source)
     if source_type == "morgan_stanley_official" and crawl_morgan_stanley:

@@ -110,6 +110,14 @@ COMPANY_DOMAIN_MAP: Dict[str, str] = {
     "pinterest": "pinterest.com",
     "duolingo": "duolingo.com",
     "palantir": "palantir.com",
+    "adobe": "adobe.com",
+    "salesforce": "salesforce.com",
+    "intel": "intel.com",
+    "capital one": "capitalone.com",
+    "rockwell automation": "rockwellautomation.com",
+    "western digital": "westerndigital.com",
+    "bosch": "bosch.com",
+    "hp": "hp.com",
 }
 
 TRACKING_QUERY_PARAMS: Set[str] = {

@@ -9,7 +9,7 @@
 
 [English](./README.md) | [简体中文] | 🌐 **在线演示**: [internship-aggregator-nu.vercel.app](https://internship-aggregator-nu.vercel.app/)
 
-一个面向北美高校学生的**可审计、证据驱动型全栈实习信息聚合平台**。深度整合企业官方招聘 API、公开 ATS 接口（Greenhouse & Lever）、官方招聘门户与社区核验数据源，实时追踪 **650+ 家企业**的 **2,396 条真实有效实习岗位**——**零模拟数据、零占位薪酬、零虚构技能要求，所有薪资、技能与签证判断均保存雇主原文证据链**。
+一个面向北美高校学生的**可审计、证据驱动型全栈实习信息聚合平台**。深度整合企业官方招聘 API、公开 ATS 接口（Workday、SmartRecruiters、Greenhouse & Lever）、官方招聘门户与社区核验数据源，实时追踪 **654 家企业**的 **2,542 条真实有效实习岗位**——**零模拟数据、零占位薪酬、零虚构技能要求，所有薪资、技能与签证判断均保存雇主原文证据链**。
 
 ![Dashboard Preview](assets/homepage_preview_v2.png)
 
@@ -78,7 +78,7 @@ python3 backend/audit_data_quality.py
 | 权威优先级 | 来源类型 (`source_type`) | 覆盖渠道与代表企业 | 数据核验能力 |
 | :---: | :--- | :--- | :--- |
 | **Tier 1 (`100`)** | `official_api` | **Microsoft 官方招聘 API**、**Morgan Stanley Talbot API** | 原生雇主 `posted_at` 发布时间、专属岗位 ID、最高优先级上下线状态控制 |
-| **Tier 2 (`90`)** | `public_ats` | **Greenhouse & Lever 公开 ATS 接口**（Stripe、Databricks、Anthropic、Cloudflare、Figma、Scale AI、SpaceX、Coinbase、Robinhood、Pinterest、Lyft、Reddit、Asana、Instacart、Vercel、Plaid、Palantir、Zoox） | 完整 JD 正文解析、披露薪资区间原文提取、`required_skills` / `preferred_skills` 拆分、ITAR/公民身份与担保原文取证 |
+| **Tier 2 (`90`)** | `public_ats` | **Workday 公开 CXS 接口**（NVIDIA、Adobe、Salesforce、Intel、Boeing、Capital One、Rockwell Automation）、**SmartRecruiters 公开接口**（Western Digital、Bosch）以及 **Greenhouse & Lever 公开 ATS 接口**（Stripe、Databricks、Anthropic、Cloudflare、Figma、Scale AI、SpaceX、Coinbase、Robinhood、Pinterest、Lyft、Reddit、Asana、Instacart、Vercel、Plaid、Palantir、Zoox） | 完整 JD 正文解析、披露薪资区间原文提取、`required_skills` / `preferred_skills` 拆分、ITAR/公民身份与担保原文取证 |
 | **Tier 3 (`80`)** | `official_portal` | **Apple**、**Meta**、**Google**、**Amazon**、**JPMorgan Chase**、**Goldman Sachs**、**NASA STEM** | 官方门户独立岗位详情链接与职位编号核验 |
 | **Tier 4 (`60`)** | `community_verified` | **SimplifyJobs Summer 2026 Internships** | 覆盖 600+ 家北美企业，精准识别 `🛂`（不提供担保）、`🇺🇸`（要求美国公民）与 `🔒`（已关闭）标记 |
 
