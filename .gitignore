@@ -22,3 +22,8 @@ dist/
 
 # Vercel
 .vercel
+
+# Handoff docs
+.handoff.md
+.handoff.*.md
+
