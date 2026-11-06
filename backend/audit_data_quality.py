@@ -50,10 +50,15 @@ def verify_salary_matches_evidence(row: sqlite3.Row) -> Tuple[bool, str]:
     if not quote:
         return False, "Missing salary_quote in extraction_evidence"
 
-    # Verify that the numeric bound appears in the verbatim quote
+    # Verify that the numeric bound appears in the verbatim quote (checking raw float string, integer, or comma-formatted)
     min_int_str = str(int(round(s_min)))
     min_comma_str = f"{int(round(s_min)):,}"
-    if min_int_str not in quote and min_comma_str not in quote:
+    min_float_str = f"{s_min:.2f}"
+    min_float_trimmed = f"{s_min:.2f}".rstrip("0").rstrip(".")
+    if (min_int_str not in quote and 
+        min_comma_str not in quote and 
+        min_float_str not in quote and 
+        min_float_trimmed not in quote):
         return False, f"salary_min ({s_min}) not found in verbatim quote: '{quote}'"
 
     return True, f"Verified against quote: '{quote[:80]}'"
