@@ -79,10 +79,10 @@ const LiveStatsBanner = ({ stats }) => {
     }
   };
 
-  const rawTotal = Math.min(MAX_SIX_DIGIT_VALUE, stats?.total_internships ?? 3099);
-  const rawVisa = Math.min(MAX_SIX_DIGIT_VALUE, stats?.international_friendly_count ?? 3042);
-  const rawAi = Math.min(MAX_SIX_DIGIT_VALUE, stats?.ai_roles_count ?? 236);
-  const rawCompanies = Math.min(MAX_SIX_DIGIT_VALUE, stats?.companies_count ?? 772);
+  const rawTotal = Math.min(MAX_SIX_DIGIT_VALUE, stats?.total_internships ?? 1546);
+  const rawVisa = Math.min(MAX_SIX_DIGIT_VALUE, stats?.international_friendly_count ?? 1502);
+  const rawAi = Math.min(MAX_SIX_DIGIT_VALUE, stats?.ai_roles_count ?? 189);
+  const rawCompanies = Math.min(MAX_SIX_DIGIT_VALUE, stats?.companies_count ?? 484);
   const auditPassed = stats?.audit_summary?.passed_all_targets ?? true;
   const auditSampleSize = stats?.audit_summary?.sample_size ?? 120;
   const updateTime = stats?.latest_update ? formatTime(stats.latest_update) : 'Just now';
