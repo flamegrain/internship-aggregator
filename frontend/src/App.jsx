@@ -171,7 +171,7 @@ function App() {
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-xs">
               <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
-              Summer 2026 Season
+              2027 Internship Season
             </div>
 
             <a
